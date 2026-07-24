@@ -8,6 +8,7 @@
 
   var STORAGE_KEY = 'yakurekiTemplateCopy.headings.v1';
   var THEME_KEY = 'yakurekiTemplateCopy.theme.v1';
+  var TEMPLATE_URL = 'data/template.html';
 
   var state = {
     headings: [],
@@ -469,13 +470,29 @@
     pasteInput.value = '';
   });
 
+  // 全端末で同じ内容を見られるよう、まずリポジトリに同梱された共有テンプレート
+  // (data/template.html)を自動取得する。取得できない場合(オフライン・file://で
+  // 直接開いた場合など)のみ、以前ブラウザに保存された内容にフォールバックする。
   (function restoreOnLoad() {
-    var restored = loadFromStorage();
-    if (restored && restored.length) {
-      state.headings = restored;
-      setStatus('保存されていたテンプレートを復元しました(見出し' + restored.length + '件)。', 'success');
-    }
-    render();
-    renderDetailPane();
+    setStatus('共有テンプレートを読み込み中…', null);
+    fetch(TEMPLATE_URL, { cache: 'no-store' })
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.text();
+      })
+      .then(function (html) {
+        importHtml(html, '共有テンプレート');
+      })
+      .catch(function () {
+        var restored = loadFromStorage();
+        if (restored && restored.length) {
+          state.headings = restored;
+          setStatus('共有テンプレートを取得できなかったため、このブラウザに保存されていた内容を復元しました(見出し' + restored.length + '件)。', 'error');
+        } else {
+          setStatus('共有テンプレートを取得できませんでした。オフラインの場合は接続を確認するか、下の「更新」からHTMLファイルを取り込んでください。', 'error');
+        }
+        render();
+        renderDetailPane();
+      });
   })();
 })();
