@@ -21,23 +21,25 @@
     </button>
   </div>
 
-  <details class="update-area" id="updateArea">
-    <summary>更新(テンプレートHTMLの取り込み)</summary>
-    <div class="update-body">
-      <div class="dropzone" id="dropzone">
-        <p>ここにHTMLファイルをドラッグ&amp;ドロップ、またはファイルを選択してください。</p>
-        <input type="file" id="fileInput" accept=".html,.htm,text/html">
+  <div class="update-row">
+    <details class="update-area" id="updateArea">
+      <summary>更新(テンプレートHTMLの取り込み)</summary>
+      <div class="update-body">
+        <div class="dropzone" id="dropzone">
+          <p>ここにHTMLファイルをドラッグ&amp;ドロップ、またはファイルを選択してください。</p>
+          <input type="file" id="fileInput" accept=".html,.htm,text/html">
+        </div>
+        <div class="paste-area">
+          <label for="htmlPasteInput">またはHTMLソースを直接貼り付け:</label>
+          <textarea id="htmlPasteInput" rows="4" placeholder="ここにHTMLソースを貼り付け"></textarea>
+          <button id="pasteImportBtn" type="button">貼り付けた内容を取り込む</button>
+        </div>
+        <p class="update-note">新しく取り込むと、これまでのデータは新しい内容に置き換わります。</p>
       </div>
-      <div class="paste-area">
-        <label for="htmlPasteInput">またはHTMLソースを直接貼り付け:</label>
-        <textarea id="htmlPasteInput" rows="4" placeholder="ここにHTMLソースを貼り付け"></textarea>
-        <button id="pasteImportBtn" type="button">貼り付けた内容を取り込む</button>
-      </div>
-      <p class="update-note">新しく取り込むと、これまでのデータは新しい内容に置き換わります。</p>
-    </div>
-  </details>
+    </details>
 
-  <div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
+    <div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
+  </div>
 </header>
 
 <main class="layout">

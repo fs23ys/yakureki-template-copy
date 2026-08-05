@@ -126,6 +126,18 @@ body {
   :root:not([data-theme="light"]) .theme-toggle .icon-moon { display: block; }
 }
 
+.update-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  column-gap: 1rem;
+  row-gap: 0.2rem;
+}
+
+.update-area {
+  flex: none;
+}
+
 .update-area summary {
   cursor: pointer;
   font-size: 0.95rem;
@@ -211,6 +223,8 @@ body {
 }
 
 .status-message {
+  flex: 1 1 12rem;
+  min-width: 12rem;
   min-height: 1.4em;
   font-size: 0.9rem;
   padding: 0.1rem 0.2rem;
