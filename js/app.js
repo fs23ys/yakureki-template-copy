@@ -135,13 +135,13 @@
     var m = title.match(ICON_PREFIX_RE);
     if (!m) return highlightMatch(title, query);
     var icon = m[1];
-    var rest = title.slice(m[0].length);
     var iconBase = icon.replace(new RegExp('\\uFE0F$'), '');
     var dotColor = DOT_ICON_MAP[iconBase];
-    var iconHtml = dotColor
-      ? '<span class="dot dot-' + dotColor + '" aria-hidden="true"></span>'
-      : escapeHtml(icon);
-    return '<span class="title-icon">' + iconHtml + '</span>' + highlightMatch(rest, query);
+    // ドットアイコンへの置き換え対象外の記号(▶など)は、サイズ・縦位置がズレる原因になるため
+    // 特別扱いせず、通常の文字として表示する。
+    if (!dotColor) return highlightMatch(title, query);
+    var rest = title.slice(m[0].length);
+    return '<span class="title-icon"><span class="dot dot-' + dotColor + '" aria-hidden="true"></span></span>' + highlightMatch(rest, query);
   }
 
   function findHeading(id) {
