@@ -399,6 +399,22 @@
     actionEl.click();
   });
 
+  // コピー ボタン自体も1秒間だけ「コピーしました!」表示に変える(クリックした実感を持たせる)。
+  function showCopyFeedback(btn) {
+    if (btn._copyFeedbackTimer) {
+      clearTimeout(btn._copyFeedbackTimer);
+    } else {
+      btn._copyFeedbackOriginalText = btn.textContent;
+    }
+    btn.textContent = 'コピーしました!✅';
+    btn.classList.add('copy-btn-success');
+    btn._copyFeedbackTimer = setTimeout(function () {
+      btn.textContent = btn._copyFeedbackOriginalText;
+      btn.classList.remove('copy-btn-success');
+      btn._copyFeedbackTimer = null;
+    }, 1000);
+  }
+
   detailPaneEl.addEventListener('click', function (e) {
     var actionEl = e.target.closest('[data-action="copy"]');
     if (!actionEl) return;
@@ -408,6 +424,7 @@
     if (!targetBlock) return;
     copyText(targetBlock.block).then(function () {
       setStatus('「' + targetBlock.title + '」の内容をコピーしました。', 'success');
+      showCopyFeedback(actionEl);
     }).catch(function () {
       setStatus('コピーに失敗しました。お手数ですが、選択して手動でコピーしてください。', 'error');
     });

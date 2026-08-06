@@ -225,13 +225,32 @@ body {
   padding: 0.1rem 0.2rem;
 }
 
+.status-message.status-success,
+.status-message.status-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.9rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
 .status-message.status-success {
   color: var(--color-success);
+  background: var(--color-success-bg);
+}
+
+.status-message.status-success::before {
+  content: "\2705";
 }
 
 .status-message.status-error {
   color: var(--color-error);
-  font-weight: 600;
+  background: var(--color-error-bg);
+}
+
+.status-message.status-error::before {
+  content: "\26A0\FE0F";
 }
 
 .layout {
@@ -509,6 +528,11 @@ body {
   font-size: 0.9rem;
   cursor: pointer;
   margin-bottom: 0.75rem;
+  transition: background-color 0.15s ease;
+}
+
+.copy-btn.copy-btn-success {
+  background: var(--color-success);
 }
 
 .copy-btn:disabled {
