@@ -84,6 +84,26 @@
     });
   }
 
+  // SOAP形式の見出しマーカー(##S##など)を色分けしたバッジ表示に変換する。
+  var MARKER_CLASS_MAP = {
+    '##S##': 'marker-s',
+    '##O##': 'marker-o',
+    '##A##': 'marker-a',
+    '##EP##': 'marker-ep',
+    '##OP##': 'marker-op'
+  };
+
+  function renderBlockHtml(text) {
+    return text.split('\n').map(function (line) {
+      var trimmed = line.trim();
+      var markerClass = MARKER_CLASS_MAP[trimmed];
+      if (markerClass) {
+        return '<span class="marker-badge ' + markerClass + '">' + escapeHtml(trimmed) + '</span>';
+      }
+      return escapeHtml(line);
+    }).join('\n');
+  }
+
   function highlightMatch(title, query) {
     if (!query) return escapeHtml(title);
     var idx = title.toLowerCase().indexOf(query.toLowerCase());
@@ -218,7 +238,7 @@
 
       var pre = document.createElement('pre');
       pre.className = 'preview-text';
-      pre.textContent = b.block;
+      pre.innerHTML = renderBlockHtml(b.block);
       blockWrap.appendChild(pre);
 
       detailPaneEl.appendChild(blockWrap);
