@@ -525,11 +525,11 @@ body {
   letter-spacing: 0.03em;
 }
 
-.marker-s { background: #bcdcf5; color: #1c3f5f; }
-.marker-o { background: #f7e6a3; color: #5c4a00; }
-.marker-a { background: #f5b8b8; color: #6e1f1f; }
+.marker-s { background: #6fa8dc; color: #ffffff; }
+.marker-o { background: #d4a72c; color: #ffffff; }
+.marker-a { background: #e08585; color: #ffffff; }
 .marker-ep { background: #79c98f; color: #ffffff; }
-.marker-op { background: #d3c2ec; color: #4a2f6b; }
+.marker-op { background: #a98fd1; color: #ffffff; }
 
 .preview-text {
   margin: 0;
