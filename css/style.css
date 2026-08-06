@@ -1,54 +1,54 @@
 :root {
-  --color-bg: #f7f7f5;
+  --color-bg: #fdf6fb;
   --color-surface: #ffffff;
-  --color-input-bg: #f7f7f5;
+  --color-input-bg: #fbf0f8;
   --color-card-bg: #ffffff;
-  --color-border: #e9e7e2;
-  --color-text: #1f1f1f;
-  --color-muted: #6b6b66;
-  --color-accent: #9c2b2b;
-  --color-accent-soft: #f5e3e3;
-  --color-success: #1e7a34;
-  --color-success-bg: #e6f4ea;
-  --color-error: #b3261e;
-  --color-error-bg: #fce8e6;
+  --color-border: #f1def0;
+  --color-text: #3a2a3c;
+  --color-muted: #92809a;
+  --color-accent: #c96aa6;
+  --color-accent-soft: #fbe6f2;
+  --color-success: #2e9e5b;
+  --color-success-bg: #e6f7ec;
+  --color-error: #d1477a;
+  --color-error-bg: #fde8f0;
   --header-gap: 0.85rem;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
 }
 
 :root[data-theme="dark"] {
-  --color-bg: #1b1c1d;
-  --color-surface: #232426;
-  --color-input-bg: #2a2c2e;
-  --color-card-bg: #232426;
-  --color-border: #3a3c3e;
-  --color-text: #e9e8e5;
-  --color-muted: #9c9c96;
-  --color-accent: #e08a72;
-  --color-accent-soft: #3a2b26;
-  --color-success: #7ed093;
-  --color-success-bg: #1f3327;
-  --color-error: #f2948c;
-  --color-error-bg: #3a2323;
+  --color-bg: #221a26;
+  --color-surface: #2d2331;
+  --color-input-bg: #382b3d;
+  --color-card-bg: #2d2331;
+  --color-border: #4a3a50;
+  --color-text: #f3e8f1;
+  --color-muted: #baa3c1;
+  --color-accent: #e29bd0;
+  --color-accent-soft: #4a3350;
+  --color-success: #8fdba8;
+  --color-success-bg: #24382c;
+  --color-error: #f2a0c0;
+  --color-error-bg: #3d2634;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-bg: #1b1c1d;
-    --color-surface: #232426;
-    --color-input-bg: #2a2c2e;
-    --color-card-bg: #232426;
-    --color-border: #3a3c3e;
-    --color-text: #e9e8e5;
-    --color-muted: #9c9c96;
-    --color-accent: #e08a72;
-    --color-accent-soft: #3a2b26;
-    --color-success: #7ed093;
-    --color-success-bg: #1f3327;
-    --color-error: #f2948c;
-    --color-error-bg: #3a2323;
+    --color-bg: #221a26;
+    --color-surface: #2d2331;
+    --color-input-bg: #382b3d;
+    --color-card-bg: #2d2331;
+    --color-border: #4a3a50;
+    --color-text: #f3e8f1;
+    --color-muted: #baa3c1;
+    --color-accent: #e29bd0;
+    --color-accent-soft: #4a3350;
+    --color-success: #8fdba8;
+    --color-success-bg: #24382c;
+    --color-error: #f2a0c0;
+    --color-error-bg: #3d2634;
   }
 }
 
@@ -75,7 +75,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--header-gap);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 6px rgba(201, 106, 166, 0.08);
 }
 
 .search-input {
@@ -252,6 +252,7 @@ body {
   background: var(--color-card-bg);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
+  box-shadow: 0 3px 10px rgba(201, 106, 166, 0.1);
   padding: 1.1rem 1.2rem;
 }
 
@@ -302,6 +303,7 @@ body {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-card-bg);
+  box-shadow: 0 3px 10px rgba(201, 106, 166, 0.1);
   overflow: hidden;
 }
 
@@ -382,7 +384,7 @@ body {
   font-weight: 700;
   color: #fff;
   background: var(--color-muted);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 0.2rem 0.5rem;
 }
 
@@ -409,12 +411,12 @@ body {
 .dot-black { background: #545454; }
 .dot-white { background: #d8d8d2; border: 1px solid var(--color-border); }
 
-.heading-item.level-1 .badge { background: #9c2b2b; }
-.heading-item.level-2 .badge { background: #b5502f; }
-.heading-item.level-3 .badge { background: #8a7a2b; }
-.heading-item.level-4 .badge { background: #4d7a3d; }
-.heading-item.level-5 .badge { background: #2f6f8a; }
-.heading-item.level-6 .badge { background: #5c4d8a; }
+.heading-item.level-1 .badge { background: #d1679f; }
+.heading-item.level-2 .badge { background: #c66fb0; }
+.heading-item.level-3 .badge { background: #bb77c1; }
+.heading-item.level-4 .badge { background: #b07fd2; }
+.heading-item.level-5 .badge { background: #a58ade; }
+.heading-item.level-6 .badge { background: #9a94e6; }
 
 .heading-title {
   font-size: 1rem;
