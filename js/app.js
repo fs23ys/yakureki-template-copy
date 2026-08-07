@@ -363,6 +363,7 @@
     state.selectedId = state.selectedId === id ? null : id;
     render();
     renderDetailPane();
+    detailPaneEl.scrollTop = 0;
     if (state.selectedId && window.matchMedia('(max-width: 899px)').matches) {
       detailPaneEl.scrollIntoView({ block: 'start', behavior: 'smooth' });
     }

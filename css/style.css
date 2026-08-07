@@ -286,6 +286,10 @@ body {
   .detail-pane {
     margin-top: 0;
     padding: 1.25rem 1.4rem;
+    position: sticky;
+    top: 5.2rem;
+    max-height: calc(100vh - 6rem);
+    overflow-y: auto;
   }
 }
 
