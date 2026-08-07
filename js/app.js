@@ -104,9 +104,19 @@
     }).join('\n');
   }
 
+  function toKatakana(str) {
+    return str.replace(/[ぁ-ゖ]/g, function (ch) {
+      return String.fromCharCode(ch.charCodeAt(0) + 0x60);
+    });
+  }
+
+  function normalizeForSearch(str) {
+    return toKatakana(str).toLowerCase();
+  }
+
   function highlightMatch(title, query) {
     if (!query) return escapeHtml(title);
-    var idx = title.toLowerCase().indexOf(query.toLowerCase());
+    var idx = normalizeForSearch(title).indexOf(normalizeForSearch(query));
     if (idx === -1) return escapeHtml(title);
     return (
       escapeHtml(title.slice(0, idx)) +
@@ -280,7 +290,7 @@
 
     if (query) {
       var filtered = state.headings.filter(function (h) {
-        return h.title.toLowerCase().indexOf(query.toLowerCase()) !== -1;
+        return normalizeForSearch(h.title).indexOf(normalizeForSearch(query)) !== -1;
       });
       if (filtered.length === 0) {
         emptyEl.textContent = '「' + query + '」に一致する見出しが見つかりません。';
