@@ -114,9 +114,27 @@
     return toKatakana(str).toLowerCase();
   }
 
+  function isWordChar(ch) {
+    return /[\p{L}\p{N}]/u.test(ch);
+  }
+
+  // 「あ」のような短い1文字でも無関係な語まで拾わないよう、単語の先頭からの一致(前方一致)のみ許可する。
+  // 「①アムロジピン」のように記号・番号が前置される見出しにも対応するため、
+  // 文字列全体の先頭だけでなく、記号などの非文字の直後(=単語の先頭)も一致開始位置として扱う。
+  function findPrefixMatchIndex(normTitle, normQuery) {
+    if (!normQuery) return -1;
+    var searchFrom = 0;
+    while (true) {
+      var idx = normTitle.indexOf(normQuery, searchFrom);
+      if (idx === -1) return -1;
+      if (idx === 0 || !isWordChar(normTitle.charAt(idx - 1))) return idx;
+      searchFrom = idx + 1;
+    }
+  }
+
   function highlightMatch(title, query) {
     if (!query) return escapeHtml(title);
-    var idx = normalizeForSearch(title).indexOf(normalizeForSearch(query));
+    var idx = findPrefixMatchIndex(normalizeForSearch(title), normalizeForSearch(query));
     if (idx === -1) return escapeHtml(title);
     return (
       escapeHtml(title.slice(0, idx)) +
@@ -290,7 +308,7 @@
 
     if (query) {
       var filtered = state.headings.filter(function (h) {
-        return normalizeForSearch(h.title).indexOf(normalizeForSearch(query)) !== -1;
+        return findPrefixMatchIndex(normalizeForSearch(h.title), normalizeForSearch(query)) !== -1;
       });
       if (filtered.length === 0) {
         emptyEl.textContent = '「' + query + '」に一致する見出しが見つかりません。';
