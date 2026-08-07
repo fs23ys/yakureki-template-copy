@@ -131,7 +131,28 @@
    * プレビュー/コピーは block ではなく effectiveBlocks を使い、
    * 複数ある場合はそれぞれ別ブロックとして表示・コピーする。
    */
+  /**
+   * 見出しレベル(h1〜h6)は文書内で必ずしも1段ずつ増減するとは限らず、
+   * 「H5の次にH2、その次にまたH5」のように大きく前後することがある。
+   * 生のレベル番号でインデント幅を決めると、行ごとにインデントが不規則に
+   * ジャンプして見た目が揃わなくなるため、実際の入れ子の深さ(depth)を
+   * スタックで計算し直し、インデント・文字サイズなどの見た目はこちらを使う。
+   * (バッジに表示する「H2」などのラベルは、引き続き生のlevelを使う)
+   */
+  function computeVisualDepth(results) {
+    var stack = [];
+    for (var i = 0; i < results.length; i++) {
+      var level = results[i].level;
+      while (stack.length && stack[stack.length - 1] >= level) {
+        stack.pop();
+      }
+      stack.push(level);
+      results[i].depth = stack.length;
+    }
+  }
+
   function applyEffectiveBlocks(results) {
+    computeVisualDepth(results);
     for (var idx = 0; idx < results.length; idx++) {
       var r = results[idx];
       r.tooManyToAggregate = false;

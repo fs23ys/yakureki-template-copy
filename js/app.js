@@ -153,7 +153,8 @@
 
   function buildHeadingItemEl(h, query) {
     var li = document.createElement('li');
-    li.className = 'heading-item level-' + h.level + (state.selectedId === h.id ? ' selected' : '');
+    var visualLevel = h.depth || h.level;
+    li.className = 'heading-item level-' + visualLevel + (state.selectedId === h.id ? ' selected' : '');
     li.dataset.id = h.id;
 
     var row = document.createElement('div');
@@ -162,7 +163,7 @@
     row.setAttribute('role', 'button');
     row.setAttribute('aria-pressed', state.selectedId === h.id ? 'true' : 'false');
     row.dataset.action = 'select';
-    var showBadge = h.level !== 1 && !!h.block;
+    var showBadge = visualLevel !== 1 && !!h.block;
     row.innerHTML =
       (showBadge ? '<span class="badge">H' + h.level + '</span>' : '') +
       '<span class="heading-title">' + renderTitleHtml(h.title, query) + '</span>';
@@ -186,7 +187,7 @@
 
     var header = document.createElement('div');
     header.className = 'detail-header';
-    var showBadge = h.level !== 1 && !!h.block;
+    var showBadge = (h.depth || h.level) !== 1 && !!h.block;
     header.innerHTML =
       (showBadge ? '<span class="badge">H' + h.level + '</span>' : '') +
       '<span class="detail-title">' + renderTitleHtml(h.title, '') + '</span>';
