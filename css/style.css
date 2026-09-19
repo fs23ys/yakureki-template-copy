@@ -306,15 +306,11 @@ body {
 }
 
 .detail-breadcrumb {
-  font-size: 0.8rem;
-  color: var(--color-muted);
-  margin-bottom: 0.4rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  margin-bottom: 0.45rem;
   word-break: break-word;
-}
-
-.detail-breadcrumb .breadcrumb-sep {
-  margin: 0 0.3rem;
-  opacity: 0.6;
 }
 
 .detail-breadcrumb mark {
@@ -416,14 +412,18 @@ body {
 
 .heading-breadcrumb {
   flex: 0 0 100%;
-  font-size: 0.75rem;
-  color: var(--color-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-accent);
   word-break: break-word;
+  margin-bottom: 0.15rem;
 }
 
-.heading-breadcrumb .breadcrumb-sep {
-  margin: 0 0.3rem;
-  opacity: 0.6;
+.breadcrumb-sep {
+  margin: 0 0.35rem;
+  color: var(--color-muted);
+  opacity: 0.55;
+  font-weight: 400;
 }
 
 .heading-breadcrumb mark {
@@ -433,7 +433,11 @@ body {
 }
 
 .heading-item.selected .heading-breadcrumb {
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.heading-item.selected .breadcrumb-sep {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .heading-item.selected .heading-breadcrumb mark {
@@ -545,6 +549,35 @@ body {
 
 .heading-item.selected .dot {
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
+}
+
+/* 検索結果(パンくず付き)は、階層インデントを持つツリー表示ではなくフラットな
+   一覧になるため、項目ごとに独立したカードとして枠線・背景・余白をはっきり分け、
+   見出しレベルによる左インデントも付けない(パンくずで階層を表しているため不要)。 */
+.heading-item.search-result {
+  border-bottom: none;
+  margin: 0 0 0.9rem;
+}
+
+.heading-item.search-result .heading-row {
+  padding: 1.1rem 1.3rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-card-bg);
+  box-shadow: 0 3px 10px rgba(201, 106, 166, 0.08);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.heading-item.search-result .heading-row:hover {
+  background: var(--color-card-bg);
+  border-color: var(--color-accent);
+  box-shadow: 0 4px 14px rgba(201, 106, 166, 0.16);
+}
+
+.heading-item.search-result.selected .heading-row {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  box-shadow: 0 4px 14px rgba(201, 106, 166, 0.28);
 }
 
 .preview-hint {

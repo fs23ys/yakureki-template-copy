@@ -147,7 +147,7 @@
   function buildBreadcrumbHtml(ancestors, query) {
     return ancestors
       .map(function (t) { return highlightMatch(t, query); })
-      .join(' <span class="breadcrumb-sep">＞</span> ');
+      .join('<span class="breadcrumb-sep">›</span>');
   }
 
   var ICON_PREFIX_RE = new RegExp('^(\\p{Extended_Pictographic}\\uFE0F?)(\\s*)', 'u');
@@ -189,7 +189,9 @@
   function buildHeadingItemEl(h, query, withBreadcrumb) {
     var li = document.createElement('li');
     var visualLevel = h.depth || h.level;
-    li.className = 'heading-item level-' + visualLevel + (state.selectedId === h.id ? ' selected' : '');
+    li.className = 'heading-item level-' + visualLevel +
+      (withBreadcrumb ? ' search-result' : '') +
+      (state.selectedId === h.id ? ' selected' : '');
     li.dataset.id = h.id;
 
     var row = document.createElement('div');
@@ -198,7 +200,9 @@
     row.setAttribute('role', 'button');
     row.setAttribute('aria-pressed', state.selectedId === h.id ? 'true' : 'false');
     row.dataset.action = 'select';
-    var showBadge = visualLevel !== 1 && !!h.block;
+    // 検索結果(パンくず表示あり)の時は、H4/H5などのバッジは情報量が多すぎるため非表示にする。
+    // 通常のツリー表示(アコーディオン展開時)では引き続き表示する。
+    var showBadge = !withBreadcrumb && visualLevel !== 1 && !!h.block;
     var breadcrumbHtml = '';
     if (withBreadcrumb && h.breadcrumb && h.breadcrumb.length) {
       breadcrumbHtml = '<span class="heading-breadcrumb">' + buildBreadcrumbHtml(h.breadcrumb, query) + '</span>';
