@@ -553,7 +553,9 @@ body {
 
 /* 検索結果(パンくず付き)は、階層インデントを持つツリー表示ではなくフラットな
    一覧になるため、項目ごとに独立したカードとして枠線・背景・余白をはっきり分け、
-   見出しレベルによる左インデントも付けない(パンくずで階層を表しているため不要)。 */
+   見出しレベルによる左インデントも付けない(パンくずで階層を表しているため不要)。
+   背景は主張しすぎないよう白系にとどめ、選択状態も塗りつぶしではなく
+   淡い色+左のアクセントバーで控えめに示す。 */
 .heading-item.search-result {
   border-bottom: none;
   margin: 0 0 0.9rem;
@@ -562,22 +564,54 @@ body {
 .heading-item.search-result .heading-row {
   padding: 1.1rem 1.3rem;
   border: 1px solid var(--color-border);
+  border-left: 4px solid transparent;
   border-radius: var(--radius-lg);
   background: var(--color-card-bg);
-  box-shadow: 0 3px 10px rgba(201, 106, 166, 0.08);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 2px 6px rgba(20, 10, 20, 0.05);
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .heading-item.search-result .heading-row:hover {
-  background: var(--color-card-bg);
   border-color: var(--color-accent);
-  box-shadow: 0 4px 14px rgba(201, 106, 166, 0.16);
+  box-shadow: 0 3px 10px rgba(20, 10, 20, 0.08);
 }
 
 .heading-item.search-result.selected .heading-row {
-  background: var(--color-accent);
+  background: var(--color-accent-soft);
   border-color: var(--color-accent);
-  box-shadow: 0 4px 14px rgba(201, 106, 166, 0.28);
+  border-left-color: var(--color-accent);
+  box-shadow: 0 3px 10px rgba(201, 106, 166, 0.2);
+}
+
+/* 見出し本文(メイン見出し)はレベルによらず大きめの太字にして、
+   小さく淡いパンくずとのメリハリをはっきりさせる。 */
+.heading-item.search-result .heading-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+/* 選択状態は淡い背景色にしたため、白文字ではなく通常の文字色を保つ。 */
+.heading-item.search-result.selected .heading-title {
+  color: var(--color-text);
+}
+
+.heading-item.search-result.selected .heading-breadcrumb {
+  color: var(--color-accent);
+}
+
+.heading-item.search-result.selected .breadcrumb-sep {
+  color: var(--color-muted);
+}
+
+.heading-item.search-result.selected .heading-title mark {
+  background: #ffe27a;
+  color: #1f1f1f;
+}
+
+.heading-item.search-result.selected .heading-breadcrumb mark {
+  background: #ffe27a;
+  color: #1f1f1f;
 }
 
 .preview-hint {

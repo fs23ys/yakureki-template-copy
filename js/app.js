@@ -144,9 +144,9 @@
     return normalizeForSearch(headingSearchText(h)).indexOf(normalizeForSearch(query)) !== -1;
   }
 
-  function buildBreadcrumbHtml(ancestors, query) {
+  function buildBreadcrumbHtml(ancestors, query, stripIcon) {
     return ancestors
-      .map(function (t) { return highlightMatch(t, query); })
+      .map(function (t) { return highlightMatch(stripIcon ? stripIconPrefix(t) : t, query); })
       .join('<span class="breadcrumb-sep">›</span>');
   }
 
@@ -179,6 +179,14 @@
     return '<span class="title-icon"><span class="dot dot-' + dotColor + '" aria-hidden="true"></span></span>' + highlightMatch(rest, query);
   }
 
+  // 見出し先頭の絵文字アイコン(🟠🔵など)を取り除いたテキストを返す。
+  // 検索結果一覧はパンくず+タイトルが並ぶため、絵文字バッジが多いと煩雑になる。
+  // 通常のツリー表示では引き続きアイコンを表示するため、検索結果でのみ使う。
+  function stripIconPrefix(title) {
+    var m = title.match(ICON_PREFIX_RE);
+    return m ? title.slice(m[0].length) : title;
+  }
+
   function findHeading(id) {
     for (var i = 0; i < state.headings.length; i++) {
       if (state.headings[i].id === id) return state.headings[i];
@@ -205,12 +213,16 @@
     var showBadge = !withBreadcrumb && visualLevel !== 1 && !!h.block;
     var breadcrumbHtml = '';
     if (withBreadcrumb && h.breadcrumb && h.breadcrumb.length) {
-      breadcrumbHtml = '<span class="heading-breadcrumb">' + buildBreadcrumbHtml(h.breadcrumb, query) + '</span>';
+      breadcrumbHtml = '<span class="heading-breadcrumb">' + buildBreadcrumbHtml(h.breadcrumb, query, true) + '</span>';
     }
+    // 検索結果一覧では絵文字アイコン(🟠🔵など)を出さず、見出し本文をそのまま大きく太字で見せる。
+    var titleHtml = withBreadcrumb
+      ? highlightMatch(stripIconPrefix(h.title), query)
+      : renderTitleHtml(h.title, query);
     row.innerHTML =
       breadcrumbHtml +
       (showBadge ? '<span class="badge">H' + h.level + '</span>' : '') +
-      '<span class="heading-title">' + renderTitleHtml(h.title, query) + '</span>';
+      '<span class="heading-title">' + titleHtml + '</span>';
     li.appendChild(row);
 
     return li;
