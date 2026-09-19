@@ -138,15 +138,22 @@
    * ジャンプして見た目が揃わなくなるため、実際の入れ子の深さ(depth)を
    * スタックで計算し直し、インデント・文字サイズなどの見た目はこちらを使う。
    * (バッジに表示する「H2」などのラベルは、引き続き生のlevelを使う)
+   *
+   * 同じスタックを使って、各見出しから見た祖先見出しのタイトル一覧(breadcrumb)も
+   * 一緒に計算する。検索結果やツリーからの選択時に「DO ＞ 皮膚科用薬 ＞ …」のような
+   * パンくずリストを表示するために使う。
    */
   function computeVisualDepth(results) {
     var stack = [];
     for (var i = 0; i < results.length; i++) {
       var level = results[i].level;
-      while (stack.length && stack[stack.length - 1] >= level) {
+      while (stack.length && stack[stack.length - 1].level >= level) {
         stack.pop();
       }
-      stack.push(level);
+      results[i].breadcrumb = stack
+        .map(function (s) { return s.title; })
+        .filter(function (t) { return t && t.trim() !== ''; });
+      stack.push({ level: level, title: results[i].title });
       results[i].depth = stack.length;
     }
   }

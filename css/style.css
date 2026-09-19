@@ -300,12 +300,33 @@ body {
 }
 
 .detail-header {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
   margin-bottom: 0.9rem;
   padding-bottom: 0.9rem;
   border-bottom: 1px solid var(--color-border);
+}
+
+.detail-breadcrumb {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  margin-bottom: 0.4rem;
+  word-break: break-word;
+}
+
+.detail-breadcrumb .breadcrumb-sep {
+  margin: 0 0.3rem;
+  opacity: 0.6;
+}
+
+.detail-breadcrumb mark {
+  background: #ffe27a;
+  color: #1f1f1f;
+  border-radius: 2px;
+}
+
+.detail-header-main {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 
 .detail-title {
@@ -384,12 +405,40 @@ body {
 .heading-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.7rem;
   padding-top: 0.85rem;
   padding-bottom: 0.85rem;
   padding-right: 0.75rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
+}
+
+.heading-breadcrumb {
+  flex: 0 0 100%;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  word-break: break-word;
+}
+
+.heading-breadcrumb .breadcrumb-sep {
+  margin: 0 0.3rem;
+  opacity: 0.6;
+}
+
+.heading-breadcrumb mark {
+  background: #ffe27a;
+  color: #1f1f1f;
+  border-radius: 2px;
+}
+
+.heading-item.selected .heading-breadcrumb {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.heading-item.selected .heading-breadcrumb mark {
+  background: rgba(255, 255, 255, 0.35);
+  color: #fff;
 }
 
 .heading-row:hover {

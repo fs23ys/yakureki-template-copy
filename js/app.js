@@ -114,33 +114,40 @@
     return toKatakana(str).toLowerCase();
   }
 
-  function isWordChar(ch) {
-    return /[\p{L}\p{N}]/u.test(ch);
+  // 日本語の見出しは「抗てんかん薬」のように語の区切りに空白が無い複合語が多く、
+  // 先頭一致(単語の先頭からの一致)だけに絞ると「てんかん」のような語の途中の部分文字列で
+  // 検索できなくなってしまう。見出し内のどこにあってもヒットするよう、単純な部分一致にする。
+  function matchIndex(text, query) {
+    if (!query) return -1;
+    return normalizeForSearch(text).indexOf(normalizeForSearch(query));
   }
 
-  // 「あ」のような短い1文字でも無関係な語まで拾わないよう、単語の先頭からの一致(前方一致)のみ許可する。
-  // 「①アムロジピン」のように記号・番号が前置される見出しにも対応するため、
-  // 文字列全体の先頭だけでなく、記号などの非文字の直後(=単語の先頭)も一致開始位置として扱う。
-  function findPrefixMatchIndex(normTitle, normQuery) {
-    if (!normQuery) return -1;
-    var searchFrom = 0;
-    while (true) {
-      var idx = normTitle.indexOf(normQuery, searchFrom);
-      if (idx === -1) return -1;
-      if (idx === 0 || !isWordChar(normTitle.charAt(idx - 1))) return idx;
-      searchFrom = idx + 1;
-    }
-  }
-
-  function highlightMatch(title, query) {
-    if (!query) return escapeHtml(title);
-    var idx = findPrefixMatchIndex(normalizeForSearch(title), normalizeForSearch(query));
-    if (idx === -1) return escapeHtml(title);
+  function highlightMatch(text, query) {
+    if (!query) return escapeHtml(text);
+    var idx = matchIndex(text, query);
+    if (idx === -1) return escapeHtml(text);
     return (
-      escapeHtml(title.slice(0, idx)) +
-      '<mark>' + escapeHtml(title.slice(idx, idx + query.length)) + '</mark>' +
-      escapeHtml(title.slice(idx + query.length))
+      escapeHtml(text.slice(0, idx)) +
+      '<mark>' + escapeHtml(text.slice(idx, idx + query.length)) + '</mark>' +
+      escapeHtml(text.slice(idx + query.length))
     );
+  }
+
+  // 見出し単体のタイトルだけでなく、上位の親見出し(パンくずリスト)も含めて
+  // 検索対象にする。「てんかん」で検索したとき、自分自身のタイトルに無くても
+  // 親見出しに含まれていればヒットするようにする。
+  function headingSearchText(h) {
+    return (h.breadcrumb || []).concat([h.title]).join(' ');
+  }
+
+  function headingMatchesQuery(h, query) {
+    return normalizeForSearch(headingSearchText(h)).indexOf(normalizeForSearch(query)) !== -1;
+  }
+
+  function buildBreadcrumbHtml(ancestors, query) {
+    return ancestors
+      .map(function (t) { return highlightMatch(t, query); })
+      .join(' <span class="breadcrumb-sep">＞</span> ');
   }
 
   var ICON_PREFIX_RE = new RegExp('^(\\p{Extended_Pictographic}\\uFE0F?)(\\s*)', 'u');
@@ -179,7 +186,7 @@
     return null;
   }
 
-  function buildHeadingItemEl(h, query) {
+  function buildHeadingItemEl(h, query, withBreadcrumb) {
     var li = document.createElement('li');
     var visualLevel = h.depth || h.level;
     li.className = 'heading-item level-' + visualLevel + (state.selectedId === h.id ? ' selected' : '');
@@ -192,7 +199,12 @@
     row.setAttribute('aria-pressed', state.selectedId === h.id ? 'true' : 'false');
     row.dataset.action = 'select';
     var showBadge = visualLevel !== 1 && !!h.block;
+    var breadcrumbHtml = '';
+    if (withBreadcrumb && h.breadcrumb && h.breadcrumb.length) {
+      breadcrumbHtml = '<span class="heading-breadcrumb">' + buildBreadcrumbHtml(h.breadcrumb, query) + '</span>';
+    }
     row.innerHTML =
+      breadcrumbHtml +
       (showBadge ? '<span class="badge">H' + h.level + '</span>' : '') +
       '<span class="heading-title">' + renderTitleHtml(h.title, query) + '</span>';
     li.appendChild(row);
@@ -216,9 +228,17 @@
     var header = document.createElement('div');
     header.className = 'detail-header';
     var showBadge = (h.depth || h.level) !== 1 && !!h.block;
+    var query = state.filter.trim();
+    var breadcrumbHtml = '';
+    if (h.breadcrumb && h.breadcrumb.length) {
+      breadcrumbHtml = '<div class="detail-breadcrumb">' + buildBreadcrumbHtml(h.breadcrumb, query) + '</div>';
+    }
     header.innerHTML =
+      breadcrumbHtml +
+      '<div class="detail-header-main">' +
       (showBadge ? '<span class="badge">H' + h.level + '</span>' : '') +
-      '<span class="detail-title">' + renderTitleHtml(h.title, '') + '</span>';
+      '<span class="detail-title">' + renderTitleHtml(h.title, query) + '</span>' +
+      '</div>';
     detailPaneEl.appendChild(header);
 
     var blocks = h.effectiveBlocks || [];
@@ -308,7 +328,7 @@
 
     if (query) {
       var filtered = state.headings.filter(function (h) {
-        return findPrefixMatchIndex(normalizeForSearch(h.title), normalizeForSearch(query)) !== -1;
+        return headingMatchesQuery(h, query);
       });
       if (filtered.length === 0) {
         emptyEl.textContent = '「' + query + '」に一致する見出しが見つかりません。';
@@ -317,7 +337,7 @@
       emptyEl.textContent = '';
       var frag = document.createDocumentFragment();
       filtered.forEach(function (h) {
-        frag.appendChild(buildHeadingItemEl(h, query));
+        frag.appendChild(buildHeadingItemEl(h, query, true));
       });
       listEl.appendChild(frag);
       return;
