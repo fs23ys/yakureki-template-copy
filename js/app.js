@@ -208,9 +208,6 @@
     row.setAttribute('role', 'button');
     row.setAttribute('aria-pressed', state.selectedId === h.id ? 'true' : 'false');
     row.dataset.action = 'select';
-    // 検索結果(パンくず表示あり)の時は、H4/H5などのバッジは情報量が多すぎるため非表示にする。
-    // 通常のツリー表示(アコーディオン展開時)では引き続き表示する。
-    var showBadge = !withBreadcrumb && visualLevel !== 1 && !!h.block;
     var breadcrumbHtml = '';
     if (withBreadcrumb && h.breadcrumb && h.breadcrumb.length) {
       breadcrumbHtml = '<span class="heading-breadcrumb">' + buildBreadcrumbHtml(h.breadcrumb, query, true) + '</span>';
@@ -221,7 +218,6 @@
       : renderTitleHtml(h.title, query);
     row.innerHTML =
       breadcrumbHtml +
-      (showBadge ? '<span class="badge">H' + h.level + '</span>' : '') +
       '<span class="heading-title">' + titleHtml + '</span>';
     li.appendChild(row);
 
@@ -243,7 +239,6 @@
 
     var header = document.createElement('div');
     header.className = 'detail-header';
-    var showBadge = (h.depth || h.level) !== 1 && !!h.block;
     var query = state.filter.trim();
     var breadcrumbHtml = '';
     if (h.breadcrumb && h.breadcrumb.length) {
@@ -252,7 +247,6 @@
     header.innerHTML =
       breadcrumbHtml +
       '<div class="detail-header-main">' +
-      (showBadge ? '<span class="badge">H' + h.level + '</span>' : '') +
       '<span class="detail-title">' + renderTitleHtml(h.title, query) + '</span>' +
       '</div>';
     detailPaneEl.appendChild(header);
