@@ -188,8 +188,114 @@
     }
   }
 
+  // ①〜⑳等の丸数字(Unicode「囲み数字」ブロック)を見出し先頭から取り除くための正規表現。
+  var CIRCLED_NUMBER_RE = /^[①-⓿㉑-㊿]+\s*/;
+
+  /**
+   * 見出しレベル4のタイトルから「薬品名」だけを取り出す。
+   * 例: 「① ロキソプロフェン」→「ロキソプロフェン」
+   *     「① レキサルティ（認知症に伴う精神症状安定）」→「レキサルティ」(括弧内は補足情報)
+   */
+  function cleanDrugName(rawTitle) {
+    var t = String(rawTitle || '').replace(CIRCLED_NUMBER_RE, '');
+    var m = t.match(/[（(]/);
+    if (m) t = t.slice(0, m.index);
+    return t.trim();
+  }
+
+  // 見出し先頭の絵文字アイコン(🔵等)を取り除くための正規表現(parser.js内でも
+  // 薬効分類名のクレンジングに使うため、app.js側のstripIconPrefixとは別に用意する)。
+  var ICON_PREFIX_RE_FOR_PARSER = new RegExp('^(\\p{Extended_Pictographic}\\uFE0F?)\\s*', 'u');
+  // 「No.19」「No.4」のような通し番号ラベルを取り除くための正規表現。
+  var NO_LABEL_RE = /^No\.?\s*\d+\s*/i;
+
+  /**
+   * 見出しレベル3(薬効分類見出し、「🔵 No.X 〇〇」形式)のタイトルから
+   * 「🔵」や「No.X」を取り除き、薬効分類名だけを取り出す。
+   * 例: 「🔵 No.1 睡眠薬」→「睡眠薬」
+   */
+  function cleanCategoryName(rawTitle) {
+    var t = String(rawTitle || '').replace(ICON_PREFIX_RE_FOR_PARSER, '');
+    t = t.replace(NO_LABEL_RE, '');
+    return t.trim();
+  }
+
+  // 指定した見出し(idx番目、レベルr.level)の配下(次の同格以上の見出しが
+  // 現れるまでの範囲)に、レベル4の見出しが1つでも存在するかを調べる。
+  function hasDirectLevel4Descendant(results, idx) {
+    var r = results[idx];
+    for (var j = idx + 1; j < results.length && results[j].level > r.level; j++) {
+      if (results[j].level === 4) return true;
+    }
+    return false;
+  }
+
+  /**
+   * 見出しを名前(薬品名 または 薬効分類名)ごとにグルーピングし、
+   * 「薬品名インデックス」「薬効分類インデックス」共通のデータ構造を作る。
+   * - 表記ゆれ(全角/半角など)は Unicode正規化(NFKC)してから同一名として名寄せする。
+   * - 各項目の実体(候補)は、その見出しのeffectiveBlocks(本文を持つ子孫見出しへの
+   *   集約結果。無ければ自分自身)の id をそのまま使う。実際の表示(パンくず・本文)は
+   *   このidから見出し本体を引いて使う想定(呼び出し側でfindHeadingするなど)。
+   */
+  function buildNameIndex(results, isTarget, nameOf) {
+    var groupMap = {};
+    var order = [];
+
+    results.forEach(function (h, idx) {
+      if (!isTarget(h, idx)) return;
+      var name = nameOf(h);
+      if (!name) return;
+      var key = name.normalize ? name.normalize('NFKC') : name;
+      if (!groupMap[key]) {
+        groupMap[key] = { name: name, key: key, entryIds: [] };
+        order.push(key);
+      }
+      var blocks = h.effectiveBlocks || [];
+      blocks.forEach(function (b) {
+        groupMap[key].entryIds.push(b.id);
+      });
+    });
+
+    var groups = order
+      .map(function (key) { return groupMap[key]; })
+      .filter(function (g) { return g.entryIds.length > 0; });
+
+    groups.sort(function (a, b) { return a.name.localeCompare(b.name, 'ja'); });
+
+    return groups;
+  }
+
+  /**
+   * 「薬品名インデックス」: 見出しレベル4(具体的な薬品名見出し)を対象にする。
+   */
+  function buildDrugIndex(results) {
+    return buildNameIndex(
+      results,
+      function (h) { return h.level === 4; },
+      function (h) { return cleanDrugName(h.title); }
+    );
+  }
+
+  /**
+   * 「薬効分類インデックス」: 見出しレベル3のうち、配下にレベル4を1つも
+   * 持たないもの(=個別の薬品名が存在せず、薬効分類全体で1つのテンプレしかないケース)
+   * を対象にする。判定は薬効分類名ごとではなく、見出しの出現箇所ごと(インスタンス単位)に行う。
+   */
+  function buildCategoryIndex(results) {
+    return buildNameIndex(
+      results,
+      function (h, idx) { return h.level === 3 && !hasDirectLevel4Descendant(results, idx); },
+      function (h) { return cleanCategoryName(h.title); }
+    );
+  }
+
   return {
     parseTemplateHtml: parseTemplateHtml,
-    applyEffectiveBlocks: applyEffectiveBlocks
+    applyEffectiveBlocks: applyEffectiveBlocks,
+    cleanDrugName: cleanDrugName,
+    cleanCategoryName: cleanCategoryName,
+    buildDrugIndex: buildDrugIndex,
+    buildCategoryIndex: buildCategoryIndex
   };
 });

@@ -41,7 +41,16 @@
 
 <main class="layout">
   <div class="tree-pane">
+    <div class="view-tabs" role="tablist">
+      <button type="button" class="view-tab active" data-view="tree" role="tab" aria-selected="true">階層ブラウズ</button>
+      <button type="button" class="view-tab" data-view="index" role="tab" aria-selected="false">インデックス</button>
+    </div>
+    <div class="index-subtabs" id="indexSubtabs" hidden>
+      <button type="button" class="index-subtab active" data-index-mode="drug">薬品名で探す</button>
+      <button type="button" class="index-subtab" data-index-mode="category">薬効分類で探す</button>
+    </div>
     <input type="search" id="searchInput" class="search-input" placeholder="🔍 見出しを検索…" aria-label="見出しを検索">
+    <div id="drugAlphabetNav" class="drug-alphabet-nav" hidden></div>
     <ul id="headingList" class="heading-list"></ul>
     <p id="emptyMessage" class="empty-message"></p>
   </div>

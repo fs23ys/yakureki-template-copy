@@ -14,7 +14,13 @@
     headings: [],
     selectedId: null,
     filter: '',
-    expandedGroupIds: {}
+    expandedGroupIds: {},
+    view: 'tree',       // 'tree' | 'index'
+    indexMode: 'drug',  // 'drug' | 'category' (viewが'index'の時のみ有効)
+    drugGroups: [],
+    categoryGroups: [],
+    selectedDrugKey: null,
+    selectedCategoryKey: null
   };
 
   function loadFromStorage() {
@@ -50,6 +56,10 @@
   var updateArea = document.getElementById('updateArea');
   var detailPaneEl = document.getElementById('detailPane');
   var themeToggleBtn = document.getElementById('themeToggle');
+  var drugAlphabetNavEl = document.getElementById('drugAlphabetNav');
+  var viewTabButtons = Array.prototype.slice.call(document.querySelectorAll('.view-tab'));
+  var indexSubtabsEl = document.getElementById('indexSubtabs');
+  var indexSubtabButtons = Array.prototype.slice.call(document.querySelectorAll('.index-subtab'));
 
   function setStatus(message, kind) {
     statusEl.textContent = message;
@@ -185,6 +195,36 @@
   function stripIconPrefix(title) {
     var m = title.match(ICON_PREFIX_RE);
     return m ? title.slice(m[0].length) : title;
+  }
+
+  // 薬剤名インデックスの五十音ジャンプ用: 先頭の文字がどの行(あ行〜わ行)に
+  // 属するかを判定する。濁点・半濁点・拗音・長音は対応する清音の行にまとめる。
+  var GYOU_LIST = ['あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ', '他'];
+
+  var KANA_ROW_MAP = (function () {
+    var rows = {
+      'あ': 'アイウエオァィゥェォヴ',
+      'か': 'カキクケコガギグゲゴヵヶ',
+      'さ': 'サシスセソザジズゼゾ',
+      'た': 'タチツテトダヂヅデドッ',
+      'な': 'ナニヌネノ',
+      'は': 'ハヒフヘホバビブベボパピプペポ',
+      'ま': 'マミムメモ',
+      'や': 'ヤユヨャュョ',
+      'ら': 'ラリルレロ',
+      'わ': 'ワヲンヮ'
+    };
+    var map = {};
+    Object.keys(rows).forEach(function (row) {
+      rows[row].split('').forEach(function (ch) { map[ch] = row; });
+    });
+    return map;
+  })();
+
+  function gyouOf(name) {
+    if (!name) return '他';
+    var ch = toKatakana(name.charAt(0));
+    return KANA_ROW_MAP[ch] || '他';
   }
 
   function findHeading(id) {
@@ -326,7 +366,43 @@
     return groups;
   }
 
+  // 薬品名インデックス・薬効分類インデックスは、対象となる見出しレベルや
+  // 名前のクレンジング方法が違うだけで、UI(五十音一覧→候補一覧)の構造は共通のため、
+  // 表示に必要な情報をこのオブジェクトにまとめて使い回す。
+  function getIndexConfig() {
+    if (state.indexMode === 'category') {
+      return {
+        groups: state.categoryGroups,
+        selectedKey: state.selectedCategoryKey,
+        selectAction: 'select-category',
+        backAction: 'back-to-category-list',
+        emptyNoneText: 'この文書からは、個別の薬品名を持たない薬効分類が見つかりませんでした。',
+        noMatchText: function (q) { return '「' + q + '」に一致する薬効分類が見つかりません。'; },
+        candidateNoneText: 'この薬効分類の候補が見つかりませんでした。'
+      };
+    }
+    return {
+      groups: state.drugGroups,
+      selectedKey: state.selectedDrugKey,
+      selectAction: 'select-drug',
+      backAction: 'back-to-drug-list',
+      emptyNoneText: 'この文書からは薬品名(見出しレベル4)が見つかりませんでした。',
+      noMatchText: function (q) { return '「' + q + '」に一致する薬品名が見つかりません。'; },
+      candidateNoneText: 'この薬品名の候補が見つかりませんでした。'
+    };
+  }
+
   function render() {
+    if (state.view === 'index') {
+      drugAlphabetNavEl.hidden = !!getIndexConfig().selectedKey;
+      renderIndexView();
+      return;
+    }
+    drugAlphabetNavEl.hidden = true;
+    renderTreeView();
+  }
+
+  function renderTreeView() {
     var query = state.filter.trim();
 
     listEl.innerHTML = '';
@@ -395,6 +471,125 @@
     listEl.appendChild(groupFrag);
   }
 
+  // インデックス(薬品名/薬効分類 共通): 名前一覧(五十音別)、または
+  // 選択中の名前に紐づく候補一覧を描画する。
+  function renderIndexView() {
+    listEl.innerHTML = '';
+    var config = getIndexConfig();
+
+    if (state.headings.length === 0) {
+      emptyEl.textContent = 'まだテンプレートが取り込まれていません。上の「更新」からHTMLファイルを取り込んでください。';
+      drugAlphabetNavEl.innerHTML = '';
+      return;
+    }
+
+    if (config.selectedKey) {
+      renderIndexCandidates(config);
+      return;
+    }
+
+    var query = state.filter.trim();
+    var groups = config.groups.filter(function (g) {
+      return !query || normalizeForSearch(g.name).indexOf(normalizeForSearch(query)) !== -1;
+    });
+
+    if (config.groups.length === 0) {
+      emptyEl.textContent = config.emptyNoneText;
+      renderDrugAlphabetNav([]);
+      return;
+    }
+    if (groups.length === 0) {
+      emptyEl.textContent = config.noMatchText(query);
+      renderDrugAlphabetNav([]);
+      return;
+    }
+    emptyEl.textContent = '';
+
+    var byGyou = {};
+    groups.forEach(function (g) {
+      var gy = gyouOf(g.name);
+      if (!byGyou[gy]) byGyou[gy] = [];
+      byGyou[gy].push(g);
+    });
+
+    renderDrugAlphabetNav(GYOU_LIST.filter(function (gy) { return byGyou[gy] && byGyou[gy].length; }));
+
+    var frag = document.createDocumentFragment();
+    GYOU_LIST.forEach(function (gy) {
+      if (!byGyou[gy] || !byGyou[gy].length) return;
+
+      var labelLi = document.createElement('li');
+      labelLi.className = 'drug-gyou-label';
+      labelLi.id = 'drugGyou-' + gy;
+      labelLi.textContent = gy === '他' ? '英数字・その他' : gy + '行';
+      frag.appendChild(labelLi);
+
+      byGyou[gy].forEach(function (g) {
+        var li = document.createElement('li');
+        li.className = 'drug-name-item';
+        var row = document.createElement('div');
+        row.className = 'drug-name-row';
+        row.tabIndex = 0;
+        row.setAttribute('role', 'button');
+        row.dataset.action = config.selectAction;
+        row.dataset.key = g.key;
+        row.innerHTML =
+          '<span class="drug-name-text">' + highlightMatch(g.name, query) + '</span>' +
+          '<span class="drug-name-count">' + g.entryIds.length + '件</span>';
+        li.appendChild(row);
+        frag.appendChild(li);
+      });
+    });
+    listEl.appendChild(frag);
+  }
+
+  function renderIndexCandidates(config) {
+    var group = config.groups.filter(function (g) { return g.key === config.selectedKey; })[0];
+    if (!group) {
+      if (state.indexMode === 'category') state.selectedCategoryKey = null;
+      else state.selectedDrugKey = null;
+      renderIndexView();
+      return;
+    }
+
+    var entries = group.entryIds.map(findHeading).filter(Boolean);
+
+    var backLi = document.createElement('li');
+    backLi.className = 'drug-back-row';
+    var backRow = document.createElement('div');
+    backRow.className = 'drug-back-button';
+    backRow.tabIndex = 0;
+    backRow.setAttribute('role', 'button');
+    backRow.dataset.action = config.backAction;
+    backRow.textContent = '← 一覧に戻る';
+    backLi.appendChild(backRow);
+    listEl.appendChild(backLi);
+
+    var titleLi = document.createElement('li');
+    titleLi.className = 'drug-selected-heading';
+    titleLi.textContent = group.name + 'の候補(' + entries.length + '件)';
+    listEl.appendChild(titleLi);
+
+    if (entries.length === 0) {
+      emptyEl.textContent = config.candidateNoneText;
+      return;
+    }
+    emptyEl.textContent = '';
+
+    var frag = document.createDocumentFragment();
+    entries.forEach(function (h) {
+      frag.appendChild(buildHeadingItemEl(h, '', true));
+    });
+    listEl.appendChild(frag);
+  }
+
+  function renderDrugAlphabetNav(availableGyouList) {
+    drugAlphabetNavEl.innerHTML = GYOU_LIST.map(function (gy) {
+      var disabled = availableGyouList.indexOf(gy) === -1;
+      return '<button type="button" class="drug-gyou-jump" data-gyou="' + gy + '"' + (disabled ? ' disabled' : '') + '>' + gy + '</button>';
+    }).join('');
+  }
+
   function copyText(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       return navigator.clipboard.writeText(text);
@@ -448,15 +643,87 @@
       var li = e.target.closest('.heading-item');
       if (!li) return;
       selectHeading(li.dataset.id);
+      return;
+    }
+
+    if (actionEl.dataset.action === 'select-drug') {
+      state.selectedDrugKey = actionEl.dataset.key;
+      render();
+      return;
+    }
+
+    if (actionEl.dataset.action === 'back-to-drug-list') {
+      state.selectedDrugKey = null;
+      render();
+      return;
+    }
+
+    if (actionEl.dataset.action === 'select-category') {
+      state.selectedCategoryKey = actionEl.dataset.key;
+      render();
+      return;
+    }
+
+    if (actionEl.dataset.action === 'back-to-category-list') {
+      state.selectedCategoryKey = null;
+      render();
     }
   });
 
   listEl.addEventListener('keydown', function (e) {
     if (e.key !== 'Enter' && e.key !== ' ') return;
-    var actionEl = e.target.closest('[data-action="select"], [data-action="toggle-group"]');
+    var actionEl = e.target.closest(
+      '[data-action="select"], [data-action="toggle-group"], ' +
+      '[data-action="select-drug"], [data-action="back-to-drug-list"], ' +
+      '[data-action="select-category"], [data-action="back-to-category-list"]'
+    );
     if (!actionEl) return;
     e.preventDefault();
     actionEl.click();
+  });
+
+  drugAlphabetNavEl.addEventListener('click', function (e) {
+    var btn = e.target.closest('.drug-gyou-jump');
+    if (!btn || btn.disabled) return;
+    var target = document.getElementById('drugGyou-' + btn.dataset.gyou);
+    if (target) target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  });
+
+  function updateSearchPlaceholder() {
+    if (state.view !== 'index') {
+      searchInput.placeholder = '🔍 見出しを検索…';
+      return;
+    }
+    searchInput.placeholder = state.indexMode === 'category' ? '🔍 薬効分類名を検索…' : '🔍 薬品名を検索…';
+  }
+
+  viewTabButtons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var view = btn.dataset.view;
+      if (state.view === view) return;
+      state.view = view;
+      indexSubtabsEl.hidden = view !== 'index';
+      updateSearchPlaceholder();
+      viewTabButtons.forEach(function (b) {
+        var active = b === btn;
+        b.classList.toggle('active', active);
+        b.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      render();
+    });
+  });
+
+  indexSubtabButtons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var mode = btn.dataset.indexMode;
+      if (state.indexMode === mode) return;
+      state.indexMode = mode;
+      updateSearchPlaceholder();
+      indexSubtabButtons.forEach(function (b) {
+        b.classList.toggle('active', b === btn);
+      });
+      render();
+    });
   });
 
   // コピー ボタン自体も1秒間だけ「コピーしました!」表示に変える(クリックした実感を持たせる)。
@@ -499,7 +766,11 @@
     try {
       var headings = TemplateParser.parseTemplateHtml(htmlString);
       state.headings = headings;
+      state.drugGroups = TemplateParser.buildDrugIndex(headings);
+      state.categoryGroups = TemplateParser.buildCategoryIndex(headings);
       state.selectedId = null;
+      state.selectedDrugKey = null;
+      state.selectedCategoryKey = null;
       state.filter = '';
       state.expandedGroupIds = {};
       searchInput.value = '';
@@ -584,6 +855,8 @@
         var restored = loadFromStorage();
         if (restored && restored.length) {
           state.headings = restored;
+          state.drugGroups = TemplateParser.buildDrugIndex(restored);
+          state.categoryGroups = TemplateParser.buildCategoryIndex(restored);
           setStatus('共有テンプレートを取得できなかったため、このブラウザに保存されていた内容を復元しました(見出し' + restored.length + '件)。', 'error');
         } else {
           setStatus('共有テンプレートを取得できませんでした。オフラインの場合は接続を確認するか、下の「更新」からHTMLファイルを取り込んでください。', 'error');
