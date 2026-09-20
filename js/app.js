@@ -56,9 +56,17 @@
   var indexSubtabsEl = document.getElementById('indexSubtabs');
   var indexSubtabButtons = Array.prototype.slice.call(document.querySelectorAll('.index-subtab'));
 
+  // ヘッダーが常時メッセージで埋まらないよう、取り込み成功時などの通知は
+  // 表示しない(コピー操作はボタン側の一時フィードバックで十分なため)。
+  // 実際に確認してほしい異常(取得失敗など)の時だけヘッダーに表示する。
   function setStatus(message, kind) {
+    if (kind !== 'error') {
+      statusEl.textContent = '';
+      statusEl.className = 'status-message';
+      return;
+    }
     statusEl.textContent = message;
-    statusEl.className = 'status-message' + (kind ? ' status-' + kind : '');
+    statusEl.className = 'status-message status-error';
   }
 
   function applyTheme(theme) {
