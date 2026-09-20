@@ -266,26 +266,41 @@
     return groups;
   }
 
+  // 「① ロキソプロフェン」のように丸数字で始まるタイトルは、本来はレベル4に
+  // 置かれるはずの具体的な薬品名。原本のGoogleドキュメントには、レベル4を
+  // 挟まずレベル3の位置に直接こうした薬品名見出しを書いている箇所があるため、
+  // レベル3であっても丸数字始まりのタイトルは「薬効分類」ではなく「薬品名」として扱う。
+  function isDrugLikeTitle(rawTitle) {
+    return CIRCLED_NUMBER_RE.test(String(rawTitle || '').trim());
+  }
+
   /**
-   * 「薬品名インデックス」: 見出しレベル4(具体的な薬品名見出し)を対象にする。
+   * 「薬品名インデックス」: 見出しレベル4(具体的な薬品名見出し)、および
+   * レベル3でも丸数字始まりで実質的に薬品名そのものを名乗っているものを対象にする。
    */
   function buildDrugIndex(results) {
     return buildNameIndex(
       results,
-      function (h) { return h.level === 4; },
+      function (h, idx) {
+        if (h.level === 4) return true;
+        return h.level === 3 && !hasDirectLevel4Descendant(results, idx) && isDrugLikeTitle(h.title);
+      },
       function (h) { return cleanDrugName(h.title); }
     );
   }
 
   /**
    * 「薬効分類インデックス」: 見出しレベル3のうち、配下にレベル4を1つも
-   * 持たないもの(=個別の薬品名が存在せず、薬効分類全体で1つのテンプレしかないケース)
-   * を対象にする。判定は薬効分類名ごとではなく、見出しの出現箇所ごと(インスタンス単位)に行う。
+   * 持たず(=個別の薬品名が存在せず、薬効分類全体で1つのテンプレしかないケース)、
+   * かつタイトルが薬品名らしい丸数字始まりでもないものを対象にする。
+   * 判定は薬効分類名ごとではなく、見出しの出現箇所ごと(インスタンス単位)に行う。
    */
   function buildCategoryIndex(results) {
     return buildNameIndex(
       results,
-      function (h, idx) { return h.level === 3 && !hasDirectLevel4Descendant(results, idx); },
+      function (h, idx) {
+        return h.level === 3 && !hasDirectLevel4Descendant(results, idx) && !isDrugLikeTitle(h.title);
+      },
       function (h) { return cleanCategoryName(h.title); }
     );
   }

@@ -49,11 +49,6 @@
   var emptyEl = document.getElementById('emptyMessage');
   var searchInput = document.getElementById('searchInput');
   var statusEl = document.getElementById('statusMessage');
-  var fileInput = document.getElementById('fileInput');
-  var dropzone = document.getElementById('dropzone');
-  var pasteInput = document.getElementById('htmlPasteInput');
-  var pasteImportBtn = document.getElementById('pasteImportBtn');
-  var updateArea = document.getElementById('updateArea');
   var detailPaneEl = document.getElementById('detailPane');
   var themeToggleBtn = document.getElementById('themeToggle');
   var drugAlphabetNavEl = document.getElementById('drugAlphabetNav');
@@ -776,7 +771,6 @@
       searchInput.value = '';
       render();
       renderDetailPane();
-      updateArea.open = false;
 
       var saved = saveToStorage(headings);
       if (saved) {
@@ -789,54 +783,11 @@
     }
   }
 
-  function readFile(file) {
-    var name = file.name || 'ファイル';
-    if (!/\.html?$/i.test(name)) {
-      setStatus('HTMLファイル(.html)を選択してください。', 'error');
-      return;
-    }
-    var reader = new FileReader();
-    reader.onload = function () {
-      importHtml(String(reader.result), '「' + name + '」');
-    };
-    reader.onerror = function () {
-      setStatus('ファイルの読み込みに失敗しました。', 'error');
-    };
-    reader.readAsText(file, 'UTF-8');
-  }
-
-  fileInput.addEventListener('change', function () {
-    var file = fileInput.files && fileInput.files[0];
-    if (file) readFile(file);
-    fileInput.value = '';
-  });
-
-  ['dragenter', 'dragover'].forEach(function (evt) {
-    dropzone.addEventListener(evt, function (e) {
-      e.preventDefault();
-      dropzone.classList.add('dragover');
-    });
-  });
-  ['dragleave', 'drop'].forEach(function (evt) {
-    dropzone.addEventListener(evt, function (e) {
-      e.preventDefault();
-      dropzone.classList.remove('dragover');
-    });
-  });
-  dropzone.addEventListener('drop', function (e) {
-    var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-    if (file) readFile(file);
-  });
-
-  pasteImportBtn.addEventListener('click', function () {
-    var text = pasteInput.value;
-    if (!text.trim()) {
-      setStatus('貼り付けるHTMLソースが空です。', 'error');
-      return;
-    }
-    importHtml(text, '貼り付けたHTMLソース');
-    pasteInput.value = '';
-  });
+  // 手動でのHTML取り込みUIは廃止した(共有テンプレートの更新はリポジトリの
+  // data/template.htmlを直接差し替える運用に統一したため)。
+  // ただし自動テストからはHTML文字列を直接取り込めると都合が良いため、
+  // importHtmlをテスト用フックとして公開しておく。
+  window.__importHtmlForTest = importHtml;
 
   // 全端末で同じ内容を見られるよう、まずリポジトリに同梱された共有テンプレート
   // (data/template.html)を自動取得する。取得できない場合(オフライン・file://で
