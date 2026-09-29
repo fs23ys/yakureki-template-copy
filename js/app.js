@@ -354,6 +354,26 @@
     return TemplateParser.extractPlaceholders(block.block).length > 0 ? state.placeholderValues : undefined;
   }
 
+  var PILL_ICON_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><g transform="rotate(-45 12 12)"><rect x="3" y="8" width="18" height="8" rx="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v8" stroke="currentColor" stroke-width="1.8"/><path d="M3 12a4 4 0 0 1 4-4h5v8H7a4 4 0 0 1-4-4z" fill="currentColor"/></g></svg>';
+
+  function clearField(label, input) {
+    state.placeholderValues[label] = '';
+    input.value = '';
+    refreshPreviews();
+  }
+
+  // Escキー: 入力欄にフォーカスがあればその欄だけ、それ以外なら全ての入力欄をクリアする。
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    var inputs = detailPaneEl.querySelectorAll('.placeholder-input');
+    if (!inputs.length) return;
+    var focused = e.target && e.target.classList && e.target.classList.contains('placeholder-input') ? e.target : null;
+    var labels = detailPaneEl.querySelectorAll('.placeholder-label');
+    for (var i = 0; i < inputs.length; i++) {
+      if (focused && inputs[i] !== focused) continue;
+      clearField(labels[i].textContent, inputs[i]);
+    }
+  });
   function buildPlaceholderInputsEl(blocks) {
     var values = state.placeholderValues;
     var labels = [];
@@ -379,6 +399,12 @@
     }
     var wrap = document.createElement('div');
     wrap.className = 'placeholder-inputs';
+    var candidateRow = null;
+
+    var title = document.createElement('div');
+    title.className = 'placeholder-title';
+    title.innerHTML = PILL_ICON_SVG + '<span>置換入力</span>';
+    wrap.appendChild(title);
 
     labels.forEach(function (label) {
       if (values[label] === undefined) values[label] = '';
@@ -401,28 +427,51 @@
         values[label] = input.value;
         refreshPreviews();
       });
-      field.appendChild(input);
+
+      var clearBtn = document.createElement('button');
+      clearBtn.type = 'button';
+      clearBtn.className = 'placeholder-clear';
+      clearBtn.setAttribute('aria-label', label + 'をクリア');
+      clearBtn.title = 'クリア (Esc)';
+      clearBtn.textContent = '\u2716';
+      clearBtn.addEventListener('click', function () {
+        clearField(label, input);
+        input.focus();
+      });
+
+      var inputWrap = document.createElement('div');
+      inputWrap.className = 'placeholder-input-wrap';
+      inputWrap.appendChild(input);
+      inputWrap.appendChild(clearBtn);
+      field.appendChild(inputWrap);
 
       if (candidates.length > 0) {
-        var chips = document.createElement('div');
-        chips.className = 'placeholder-chips';
-        candidates.forEach(function (c) {
-          var chip = document.createElement('button');
-          chip.type = 'button';
-          chip.className = 'placeholder-chip';
-          chip.textContent = c;
-          chip.addEventListener('click', function () {
-            input.value = c;
-            values[label] = c;
-            refreshPreviews();
-          });
-          chips.appendChild(chip);
-        });
-        field.appendChild(chips);
+        candidateRow = { label: label, input: input, candidates: candidates };
       }
-
       wrap.appendChild(field);
     });
+
+    if (candidateRow) {
+      var row = document.createElement('div');
+      row.className = 'placeholder-candidates';
+      var rowLabel = document.createElement('span');
+      rowLabel.className = 'placeholder-candidates-label';
+      rowLabel.textContent = '候補:';
+      row.appendChild(rowLabel);
+      candidateRow.candidates.forEach(function (c) {
+        var chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'placeholder-chip';
+        chip.textContent = c;
+        chip.addEventListener('click', function () {
+          candidateRow.input.value = c;
+          values[candidateRow.label] = c;
+          refreshPreviews();
+        });
+        row.appendChild(chip);
+      });
+      wrap.appendChild(row);
+    }
 
     return wrap;
   }
@@ -933,17 +982,8 @@
     copyText(textToCopy).then(function () {
       setStatus('「' + targetBlock.title + '」の内容をコピーしました。', 'success');
       showCopyFeedback(actionEl);
-      // コピー完了後、次のテンプレート・次の患者に値が残らないよう共通の入力欄をクリアする。
-      // (ボタン自体の「コピーしました!」表示を消さないよう、全体を再描画せず
-      // 入力欄と各ブロックのプレビューだけをその場でクリアする)
-      if (hasPlaceholders) {
-        Object.keys(placeholderValues).forEach(function (label) {
-          placeholderValues[label] = '';
-        });
-        var inputEls = detailPaneEl.querySelectorAll('.placeholder-input');
-        for (var i = 0; i < inputEls.length; i++) inputEls[i].value = '';
-        refreshPreviews();
-      }    }).catch(function () {
+      // 入力値はコピー後も残す(消すのは×ボタン/Escキー、または別のテンプレートへの移動時)。
+    }).catch(function () {
       setStatus('コピーに失敗しました。お手数ですが、選択して手動でコピーしてください。', 'error');
     });
   });
@@ -1014,6 +1054,8 @@
       });
   })();
 })();
+
+
 
 
 
