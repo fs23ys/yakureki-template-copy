@@ -1,13 +1,16 @@
 ﻿:root {
-  --color-bg: #fdf6fb;
+  --color-bg: #faf6f0;
   --color-surface: #ffffff;
-  --color-input-bg: #fbf0f8;
+  --color-input-bg: #ffffff;
   --color-card-bg: #ffffff;
-  --color-border: #f1def0;
-  --color-text: #3a2a3c;
-  --color-muted: #92809a;
-  --color-accent: #c96aa6;
-  --color-accent-soft: #fbe6f2;
+  --color-border: #f7d4e3;
+  --color-text: #3d3538;
+  --color-muted: #7d7075;
+  --color-accent: #d96896;
+  --color-accent-soft: #fdf0f5;
+  --color-yellow-bg: #fff8e3;
+  --color-yellow-border: #f5e4b8;
+  --color-yellow-text: #8c7320;
   --color-success: #2e9e5b;
   --color-success-bg: #e6f7ec;
   --color-error: #d1477a;
@@ -28,6 +31,9 @@
   --color-muted: #baa3c1;
   --color-accent: #e29bd0;
   --color-accent-soft: #4a3350;
+  --color-yellow-bg: #4a4230;
+  --color-yellow-border: #6b5d38;
+  --color-yellow-text: #f0d98a;
   --color-success: #8fdba8;
   --color-success-bg: #24382c;
   --color-error: #f2a0c0;
@@ -45,6 +51,9 @@
     --color-muted: #baa3c1;
     --color-accent: #e29bd0;
     --color-accent-soft: #4a3350;
+    --color-yellow-bg: #4a4230;
+    --color-yellow-border: #6b5d38;
+    --color-yellow-text: #f0d98a;
     --color-success: #8fdba8;
     --color-success-bg: #24382c;
     --color-error: #f2a0c0;
@@ -750,7 +759,7 @@ body {
 
 .placeholder-field {
   display: grid;
-  grid-template-columns: 4.2rem minmax(0, 1fr);
+  grid-template-columns: 5.6rem minmax(0, 1fr);
   align-items: center;
   column-gap: 0.5rem;
   padding: 0.15rem 0.6rem;
@@ -775,6 +784,17 @@ body {
   font-size: 0.82rem;
   font-weight: 700;
   color: var(--color-muted);
+}
+
+.placeholder-label-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.placeholder-emoji {
+  font-size: 0.95rem;
+  line-height: 1;
 }
 
 .placeholder-label {
@@ -839,6 +859,29 @@ body {
   padding: 0 0.15em;
   font-weight: 700;
 }
+
+/* 入力欄(ラベル)ごとの色分け: 未入力=濃いマーカー、入力済み=淡い色+下線。
+   ph-c0(黄) / ph-c1(青) / ph-c2(緑) / ph-c3(ピンク) を欄の並び順に割り当てる。 */
+.placeholder-empty.ph-c0 { background: #ffe27a; }
+.placeholder-empty.ph-c1 { background: #9fd3ff; }
+.placeholder-empty.ph-c2 { background: #a9e8b4; }
+.placeholder-empty.ph-c3 { background: #ffc0d8; }
+
+.placeholder-filled {
+  color: #1f1f1f;
+  border-bottom: 2px solid transparent;
+}
+.placeholder-filled.ph-c0 { background: #fff3bf; border-bottom-color: #e0b400; }
+.placeholder-filled.ph-c1 { background: #dcefff; border-bottom-color: #2f7bc9; }
+.placeholder-filled.ph-c2 { background: #dcf7e0; border-bottom-color: #2f9e58; }
+.placeholder-filled.ph-c3 { background: #ffe3ee; border-bottom-color: #d1477a; }
+
+/* 入力欄の左端にも同じ色の帯を付けて、どの欄がどのマーカーか分かるようにする */
+.placeholder-field { border-left-width: 6px; }
+.placeholder-field.ph-c0 { border-left-color: #ffd43b; }
+.placeholder-field.ph-c1 { border-left-color: #4dabf7; }
+.placeholder-field.ph-c2 { border-left-color: #51cf66; }
+.placeholder-field.ph-c3 { border-left-color: #f783ac; }
 
 .preview-hint {
   margin: 0 0 0.7rem;
@@ -934,6 +977,14 @@ body {
   .heading-item.level-6 .heading-row { padding-left: 3.5rem; }
 }
 
+button,
+input,
+textarea,
+select,
+pre {
+  font-family: inherit;
+}
+
 .placeholder-input-wrap {
   position: relative;
   display: flex;
@@ -962,3 +1013,208 @@ body {
   color: var(--color-accent);
 }
 
+
+/* ===== デザイン刷新(アイボリー背景+ピンク+ナチュラルイエロー) ===== */
+.app-header {
+  padding: 0.75rem 1.75rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+}
+
+.update-row {
+  column-gap: 0.75rem;
+}
+
+.app-title-icon {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  background: var(--color-accent-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(217, 104, 150, 0.12);
+}
+
+.app-title-group {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.app-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+}
+
+.app-title-sub {
+  margin-top: 2px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.view-tabs {
+  gap: 0;
+  padding: 4px;
+  background: #f3e5eb;
+  border-radius: 30px;
+}
+
+.view-tab {
+  padding: 0.5rem 0;
+  border: none;
+  border-radius: 20px;
+  background: transparent;
+  font-size: 0.85rem;
+}
+
+.view-tab:hover {
+  background: transparent;
+  color: var(--color-accent);
+}
+
+.view-tab.active {
+  background: var(--color-accent);
+  box-shadow: 0 2px 8px rgba(217, 104, 150, 0.3);
+}
+
+.view-tab.active:hover {
+  color: #fff;
+}
+
+:root[data-theme="dark"] .view-tabs { background: #382b3d; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .view-tabs { background: #382b3d; }
+}
+
+.search-input {
+  padding: 0.6rem 1rem;
+  font-size: 0.95rem;
+  border-radius: 24px;
+}
+
+.group-card,
+.detail-pane {
+  border-radius: 18px;
+  box-shadow: 0 4px 14px rgba(217, 104, 150, 0.06);
+}
+
+.detail-breadcrumb {
+  display: inline-block;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.8rem;
+  background: var(--color-accent-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+}
+
+/* 置換カード(ナチュラルイエロー) */
+.placeholder-inputs {
+  max-width: 560px;
+  gap: 0.5rem;
+  padding: 0.8rem 1rem;
+  background: var(--color-yellow-bg);
+  border: 1px solid var(--color-yellow-border);
+  border-radius: 18px;
+}
+
+.placeholder-title {
+  color: var(--color-yellow-text);
+  font-size: 0.8rem;
+}
+
+.placeholder-field {
+  grid-template-columns: 6rem minmax(0, 1fr);
+  padding: 0.25rem 0.9rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-yellow-border);
+  border-radius: 20px;
+}
+
+.placeholder-field,
+.placeholder-field.ph-c0,
+.placeholder-field.ph-c1,
+.placeholder-field.ph-c2,
+.placeholder-field.ph-c3 {
+  border-left-width: 1px;
+}
+.placeholder-field.ph-c0 { border-color: #ffd43b; }
+.placeholder-field.ph-c1 { border-color: #4dabf7; }
+.placeholder-field.ph-c2 { border-color: #51cf66; }
+.placeholder-field.ph-c3 { border-color: #f783ac; }
+
+.placeholder-label-wrap {
+  padding-right: 0.5rem;
+  border-right: 1px solid var(--color-border);
+}
+
+.placeholder-input {
+  font-size: 0.9rem;
+}
+
+.placeholder-clear {
+  width: 20px;
+  height: 20px;
+  font-size: 0.65rem;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.placeholder-chip {
+  padding: 0.2rem 0.7rem;
+  border-color: var(--color-yellow-border);
+}
+
+/* プレビュー内のマーカーはピル形に */
+.placeholder-empty,
+.placeholder-filled {
+  padding: 0.05em 0.55em;
+  border-radius: 12px;
+  border: 1px solid transparent;
+}
+.placeholder-empty.ph-c0, .placeholder-filled.ph-c0 { border-color: #f0d67a; }
+.placeholder-empty.ph-c1, .placeholder-filled.ph-c1 { border-color: #7fb8e8; }
+.placeholder-empty.ph-c2, .placeholder-filled.ph-c2 { border-color: #7fcf90; }
+.placeholder-empty.ph-c3, .placeholder-filled.ph-c3 { border-color: #efa0bf; }
+
+/* コピーボタン */
+.copy-btn {
+  padding: 0.6rem 1.5rem;
+  border-radius: 24px;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(217, 104, 150, 0.3);
+}
+
+.copy-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.copy-btn.copy-btn-success {
+  box-shadow: 0 4px 12px rgba(46, 158, 91, 0.3);
+}
+
+/* SOAPバッジ(やさしいパステル) */
+.marker-badge {
+  padding: 0.1rem 0.7rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.72rem;
+}
+.marker-s { background: #6b9ac4; }
+.marker-o { background: #e5a45b; }
+.marker-a { background: #e27070; }
+.marker-ep { background: #61b382; }
+.marker-op { background: #a084dc; }
+
+.preview-text {
+  border-radius: 14px;
+  line-height: 1.7;
+}

@@ -24,7 +24,8 @@
     // 「◯◯自動入力」機能の入力値。{ [ブロックid]: { [ラベル]: 入力値 } }
     // 見出しの選択が変わるたび、およびコピー完了後にクリアする(仕様: 入力値は
     // 次のテンプレート・次の患者に引き継がない/localStorageにも保存しない)。
-    placeholderValues: {}
+    placeholderValues: {},
+    placeholderColorIndex: {}
   };
 
   function loadFromStorage() {
@@ -113,14 +114,19 @@
   // valuesByLabelを渡すと、行内の◯◯プレースホルダーを入力済み/未入力で
   // 色分けハイライトする(「◯◯自動入力」機能のリアルタイムプレビュー用)。
   // 渡さない場合(プレースホルダーを含まないブロック)は従来通りそのまま表示する。
+  // ラベルごとに色分けしてマーカーを引く(欄の並び順に0,1,2,3…を割り当て)。
+  function phColorClass(label) {
+    return 'ph-c' + ((state.placeholderColorIndex[label] || 0) % 4);
+  }
+
   function renderLineWithPlaceholders(line, valuesByLabel) {
     if (!valuesByLabel) return escapeHtml(line);
     return TemplateParser.buildPlaceholderSegments(line, valuesByLabel).map(function (seg) {
       if (seg.type === 'text') return escapeHtml(seg.value);
       if (seg.type === 'filled') {
-        return '<span class="placeholder-filled">' + escapeHtml(seg.value) + '</span>';
+        return '<span class="placeholder-filled ' + phColorClass(seg.label) + '">' + escapeHtml(seg.value) + '</span>';
       }
-      return '<span class="placeholder-empty">' + escapeHtml(seg.raw) + '</span>';
+      return '<span class="placeholder-empty ' + phColorClass(seg.label) + '">' + escapeHtml(seg.raw) + '</span>';
     }).join('');
   }
 
@@ -354,7 +360,13 @@
     return TemplateParser.extractPlaceholders(block.block).length > 0 ? state.placeholderValues : undefined;
   }
 
-  var PILL_ICON_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><g transform="rotate(-45 12 12)"><rect x="3" y="8" width="18" height="8" rx="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v8" stroke="currentColor" stroke-width="1.8"/><path d="M3 12a4 4 0 0 1 4-4h5v8H7a4 4 0 0 1-4-4z" fill="currentColor"/></g></svg>';
+  var PLACEHOLDER_LABEL_EMOJI = {
+    '薬剤名': '💊',
+    '治療薬': '💊',
+    '薬効': '💡',
+    '副作用': '⚡'
+  };
+  var PILL_ICON_SVG ='<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><g transform="rotate(-45 12 12)"><rect x="3" y="8" width="18" height="8" rx="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v8" stroke="currentColor" stroke-width="1.8"/><path d="M3 12a4 4 0 0 1 4-4h5v8H7a4 4 0 0 1-4-4z" fill="currentColor"/></g></svg>';
 
   function clearField(label, input) {
     state.placeholderValues[label] = '';
@@ -403,20 +415,31 @@
 
     var title = document.createElement('div');
     title.className = 'placeholder-title';
-    title.innerHTML = PILL_ICON_SVG + '<span>置換入力</span>';
+    title.innerHTML = '<span aria-hidden="true">🪄</span><span>◯◯ を置換</span>';
     wrap.appendChild(title);
+
+    state.placeholderColorIndex = {};
+    labels.forEach(function (label, idx) { state.placeholderColorIndex[label] = idx; });
 
     labels.forEach(function (label) {
       if (values[label] === undefined) values[label] = '';
       var candidates = candidatesByLabel[label] || [];
 
       var field = document.createElement('div');
-      field.className = 'placeholder-field';
+      field.className = 'placeholder-field ' + phColorClass(label);
 
+      var labelWrap = document.createElement('div');
+      labelWrap.className = 'placeholder-label-wrap';
+      var emojiEl = document.createElement('span');
+      emojiEl.className = 'placeholder-emoji';
+      emojiEl.setAttribute('aria-hidden', 'true');
+      emojiEl.textContent = PLACEHOLDER_LABEL_EMOJI[label] || '✏️';
+      labelWrap.appendChild(emojiEl);
       var labelEl = document.createElement('label');
       labelEl.className = 'placeholder-label';
       labelEl.textContent = label;
-      field.appendChild(labelEl);
+      labelWrap.appendChild(labelEl);
+      field.appendChild(labelWrap);
 
       var input = document.createElement('input');
       input.type = 'text';
@@ -456,7 +479,7 @@
       row.className = 'placeholder-candidates';
       var rowLabel = document.createElement('span');
       rowLabel.className = 'placeholder-candidates-label';
-      rowLabel.textContent = '候補:';
+      rowLabel.textContent = '🏷️ 候補:';
       row.appendChild(rowLabel);
       candidateRow.candidates.forEach(function (c) {
         var chip = document.createElement('button');
@@ -1054,6 +1077,7 @@
       });
   })();
 })();
+
 
 
 
