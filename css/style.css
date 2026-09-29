@@ -728,6 +728,83 @@ body {
   color: #1f1f1f;
 }
 
+.placeholder-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-bottom: 0.9rem;
+  padding: 0.9rem 1rem;
+  background: var(--color-accent-soft);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.placeholder-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.placeholder-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.placeholder-input {
+  width: 100%;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.placeholder-input:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.placeholder-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.placeholder-chip {
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.placeholder-chip:hover {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+}
+
+.placeholder-filled {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border-radius: 3px;
+  padding: 0 0.15em;
+  font-weight: 700;
+}
+
+.placeholder-empty {
+  background: #ffe27a;
+  color: #1f1f1f;
+  border-radius: 3px;
+  padding: 0 0.15em;
+  font-weight: 700;
+}
+
 .preview-hint {
   margin: 0 0 0.7rem;
   font-size: 0.8rem;

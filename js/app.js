@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 薬歴テンプレコピー - UIロジック
  * parser.js の TemplateParser.parseTemplateHtml() を使って
  * 検索・見出し一覧・プレビュー・コピーのUIを構築する。
@@ -20,7 +20,11 @@
     drugGroups: [],
     categoryGroups: [],
     selectedDrugKey: null,
-    selectedCategoryKey: null
+    selectedCategoryKey: null,
+    // 「◯◯自動入力」機能の入力値。{ [ブロックid]: { [ラベル]: 入力値 } }
+    // 見出しの選択が変わるたび、およびコピー完了後にクリアする(仕様: 入力値は
+    // 次のテンプレート・次の患者に引き継がない/localStorageにも保存しない)。
+    placeholderValues: {}
   };
 
   function loadFromStorage() {
@@ -106,14 +110,28 @@
     '##OP##': 'marker-op'
   };
 
-  function renderBlockHtml(text) {
+  // valuesByLabelを渡すと、行内の◯◯プレースホルダーを入力済み/未入力で
+  // 色分けハイライトする(「◯◯自動入力」機能のリアルタイムプレビュー用)。
+  // 渡さない場合(プレースホルダーを含まないブロック)は従来通りそのまま表示する。
+  function renderLineWithPlaceholders(line, valuesByLabel) {
+    if (!valuesByLabel) return escapeHtml(line);
+    return TemplateParser.buildPlaceholderSegments(line, valuesByLabel).map(function (seg) {
+      if (seg.type === 'text') return escapeHtml(seg.value);
+      if (seg.type === 'filled') {
+        return '<span class="placeholder-filled">' + escapeHtml(seg.value) + '</span>';
+      }
+      return '<span class="placeholder-empty">' + escapeHtml(seg.raw) + '</span>';
+    }).join('');
+  }
+
+  function renderBlockHtml(text, valuesByLabel) {
     return text.split('\n').map(function (line) {
       var trimmed = line.trim();
       var markerClass = MARKER_CLASS_MAP[trimmed];
       if (markerClass) {
         return '<span class="marker-badge ' + markerClass + '">' + escapeHtml(trimmed) + '</span>';
       }
-      return escapeHtml(line);
+      return renderLineWithPlaceholders(line, valuesByLabel);
     }).join('\n');
   }
 
@@ -309,6 +327,105 @@
     return li;
   }
 
+  // 「◯◯自動入力」機能: 選択中の見出し配下の全ブロックに含まれるラベル
+  // (薬剤名/副作用/治療薬/薬効/その他)ごとに、入力欄を1つずつ作る。
+  // 複数ブロックを同時表示する場合も入力欄は共通で、入力すると全ブロックの
+  // プレビューをその場で置換・ハイライト更新する。
+  // 薬剤名欄は、祖先にレベル4見出し(薬品名見出し)があれば、そのタイトルから初期値または
+  // 候補チップ(括弧内が列挙されている場合)を補う。
+  var PLACEHOLDER_INPUT_PLACEHOLDER_TEXT = {
+    '副作用': '例: むくみ・ふらつき',
+    '薬剤名': '薬剤名を入力'
+  };
+
+  // 詳細パネル内の各ブロックのプレビューを、現在の入力値で描き直す。
+  function refreshPreviews() {
+    var h = state.selectedId ? findHeading(state.selectedId) : null;
+    var blocks = (h && h.effectiveBlocks) || [];
+    var pres = detailPaneEl.querySelectorAll('.preview-text[data-block-index]');
+    for (var i = 0; i < pres.length; i++) {
+      var b = blocks[Number(pres[i].dataset.blockIndex)];
+      if (b) pres[i].innerHTML = renderBlockHtml(b.block, blockValuesFor(b));
+    }
+  }
+
+  // ◯◯を含むブロックだけ、共通の入力値を使って置換・ハイライトする。
+  function blockValuesFor(block) {
+    return TemplateParser.extractPlaceholders(block.block).length > 0 ? state.placeholderValues : undefined;
+  }
+
+  function buildPlaceholderInputsEl(blocks) {
+    var values = state.placeholderValues;
+    var labels = [];
+    var candidatesByLabel = {};
+    var initialDrugName = '';
+    var l4Parsed = false;
+    blocks.forEach(function (block) {
+      TemplateParser.extractPlaceholders(block.block).forEach(function (label) {
+        if (labels.indexOf(label) === -1) labels.push(label);
+      });
+      if (l4Parsed) return;
+      var owner = findHeading(block.id);
+      var ancestorL4 = owner && TemplateParser.findAncestorByLevel(owner, 4);
+      if (ancestorL4) {
+        var parsed = TemplateParser.parseDrugHeadingTitle(ancestorL4.title);
+        initialDrugName = parsed.name || '';
+        candidatesByLabel['薬剤名'] = parsed.candidates || [];
+        l4Parsed = true;
+      }
+    });
+    if (values['薬剤名'] === undefined && labels.indexOf('薬剤名') !== -1) {
+      values['薬剤名'] = initialDrugName;
+    }
+    var wrap = document.createElement('div');
+    wrap.className = 'placeholder-inputs';
+
+    labels.forEach(function (label) {
+      if (values[label] === undefined) values[label] = '';
+      var candidates = candidatesByLabel[label] || [];
+
+      var field = document.createElement('div');
+      field.className = 'placeholder-field';
+
+      var labelEl = document.createElement('label');
+      labelEl.className = 'placeholder-label';
+      labelEl.textContent = label;
+      field.appendChild(labelEl);
+
+      var input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'placeholder-input';
+      input.placeholder = PLACEHOLDER_INPUT_PLACEHOLDER_TEXT[label] || '内容を入力';
+      input.value = values[label];
+      input.addEventListener('input', function () {
+        values[label] = input.value;
+        refreshPreviews();
+      });
+      field.appendChild(input);
+
+      if (candidates.length > 0) {
+        var chips = document.createElement('div');
+        chips.className = 'placeholder-chips';
+        candidates.forEach(function (c) {
+          var chip = document.createElement('button');
+          chip.type = 'button';
+          chip.className = 'placeholder-chip';
+          chip.textContent = c;
+          chip.addEventListener('click', function () {
+            input.value = c;
+            values[label] = c;
+            refreshPreviews();
+          });
+          chips.appendChild(chip);
+        });
+        field.appendChild(chips);
+      }
+
+      wrap.appendChild(field);
+    });
+
+    return wrap;
+  }
   // 選択中の見出しの内容(##S##〜##OP##ブロック)を右側の詳細パネルに描画する。
   function renderDetailPane() {
     detailPaneEl.innerHTML = '';
@@ -361,6 +478,9 @@
       return;
     }
 
+    var phBlocks = blocks.filter(function (b) { return TemplateParser.extractPlaceholders(b.block).length > 0; });
+    if (phBlocks.length > 0) detailPaneEl.appendChild(buildPlaceholderInputsEl(phBlocks));
+
     blocks.forEach(function (b, i) {
       var blockWrap = document.createElement('div');
       blockWrap.className = 'preview-block';
@@ -372,6 +492,9 @@
         blockWrap.appendChild(blockTitle);
       }
 
+      var pre = document.createElement('pre');
+      pre.dataset.blockIndex = String(i);
+
       var copyBtn = document.createElement('button');
       copyBtn.type = 'button';
       copyBtn.className = 'copy-btn';
@@ -380,9 +503,8 @@
       copyBtn.textContent = 'コピー';
       blockWrap.appendChild(copyBtn);
 
-      var pre = document.createElement('pre');
       pre.className = 'preview-text';
-      pre.innerHTML = renderBlockHtml(b.block);
+      pre.innerHTML = renderBlockHtml(b.block, blockValuesFor(b));
       blockWrap.appendChild(pre);
 
       detailPaneEl.appendChild(blockWrap);
@@ -659,6 +781,8 @@
 
   function selectHeading(id) {
     state.selectedId = state.selectedId === id ? null : id;
+    // 別のテンプレートに移動したら◯◯自動入力の入力値は引き継がない。
+    state.placeholderValues = {};
     render();
     renderDetailPane();
     detailPaneEl.scrollTop = 0;
@@ -794,10 +918,32 @@
     var blockIndex = Number(actionEl.dataset.blockIndex);
     var targetBlock = heading && heading.effectiveBlocks && heading.effectiveBlocks[blockIndex];
     if (!targetBlock) return;
-    copyText(targetBlock.block).then(function () {
+
+    var hasPlaceholders = TemplateParser.extractPlaceholders(targetBlock.block).length > 0;
+    var placeholderValues = state.placeholderValues;
+    var textToCopy = targetBlock.block;
+    if (hasPlaceholders) {
+      if (TemplateParser.hasUnfilledPlaceholder(targetBlock.block, placeholderValues)) {
+        var proceed = window.confirm('未入力の◯◯が残っています。このままコピーしますか？');
+        if (!proceed) return;
+      }
+      textToCopy = TemplateParser.applyPlaceholders(targetBlock.block, placeholderValues);
+    }
+
+    copyText(textToCopy).then(function () {
       setStatus('「' + targetBlock.title + '」の内容をコピーしました。', 'success');
       showCopyFeedback(actionEl);
-    }).catch(function () {
+      // コピー完了後、次のテンプレート・次の患者に値が残らないよう共通の入力欄をクリアする。
+      // (ボタン自体の「コピーしました!」表示を消さないよう、全体を再描画せず
+      // 入力欄と各ブロックのプレビューだけをその場でクリアする)
+      if (hasPlaceholders) {
+        Object.keys(placeholderValues).forEach(function (label) {
+          placeholderValues[label] = '';
+        });
+        var inputEls = detailPaneEl.querySelectorAll('.placeholder-input');
+        for (var i = 0; i < inputEls.length; i++) inputEls[i].value = '';
+        refreshPreviews();
+      }    }).catch(function () {
       setStatus('コピーに失敗しました。お手数ですが、選択して手動でコピーしてください。', 'error');
     });
   });
@@ -818,6 +964,7 @@
       state.selectedCategoryKey = null;
       state.filter = '';
       state.expandedGroupIds = {};
+      state.placeholderValues = {};
       searchInput.value = '';
       render();
       renderDetailPane();
@@ -867,3 +1014,6 @@
       });
   })();
 })();
+
+
+

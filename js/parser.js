@@ -153,9 +153,24 @@
       results[i].breadcrumb = stack
         .map(function (s) { return s.title; })
         .filter(function (t) { return t && t.trim() !== ''; });
-      stack.push({ level: level, title: results[i].title });
+      // 祖先見出し(id/level/title)をそのまま保持しておく。「◯◯自動入力」機能で、
+      // ある本文ブロックの祖先にあるレベル4見出し(薬品名見出し)を探すために使う。
+      results[i].ancestors = stack.slice();
+      stack.push({ id: results[i].id, level: level, title: results[i].title });
       results[i].depth = stack.length;
     }
+  }
+
+  /**
+   * 見出しの祖先の中から、指定したlevelに一致する最も近いものを返す。
+   * 見つからなければnull。
+   */
+  function findAncestorByLevel(heading, level) {
+    var ancestors = (heading && heading.ancestors) || [];
+    for (var i = ancestors.length - 1; i >= 0; i--) {
+      if (ancestors[i].level === level) return ancestors[i];
+    }
+    return null;
   }
 
   function applyEffectiveBlocks(results) {
@@ -201,6 +216,116 @@
     var m = t.match(/[（(]/);
     if (m) t = t.slice(0, m.index);
     return t.trim();
+  }
+
+  /**
+   * 見出しレベル4(薬品名見出し)のタイトルから、「◯◯自動入力」機能の
+   * 薬剤名欄に使う初期値・候補チップを取り出す。
+   * - 括弧が無い、または括弧内が読点/カンマで区切られていない(単一の補足文)場合は、
+   *   括弧より前を薬品名として初期値にする(candidatesは空)。
+   *   例:「① アムロジピン（歯茎の腫れ・浮腫なし）」→ name:「アムロジピン」
+   * - 括弧内が読点/カンマ区切りで2件以上に分かれる場合は、薬品名が列挙されている
+   *   とみなし、初期値は空にしてcandidatesにそれぞれを返す(末尾の「等」「など」、
+   *   「…」等の省略記号のみの項目は除く)。
+   *   例:「② PPI（エソメプラゾール、ランソプラゾール等）」→ name:「」, candidates:["エソメプラゾール","ランソプラゾール"]
+   */
+  function parseDrugHeadingTitle(rawTitle) {
+    var t = String(rawTitle || '').replace(CIRCLED_NUMBER_RE, '').trim();
+    var m = t.match(/[（(]([^）)]*)[）)]/);
+    if (!m) return { name: t, candidates: [] };
+
+    var name = t.slice(0, m.index).trim();
+    var rawParts = m[1].split(/[、，,]/);
+    if (rawParts.length < 2) {
+      return { name: name, candidates: [] };
+    }
+
+    var candidates = rawParts
+      .map(function (s) { return s.trim().replace(/(等|など)$/, '').trim(); })
+      .filter(function (s) { return s !== '' && !/^[…‥.・]+$/.test(s); });
+    // 「リクシアナ（腎機能低下により、30→15mgへ減量）」のように読点を含む補足文は
+    // 薬品名の列挙ではない。ひらがな・矢印を含む項目があれば列挙とみなさない。
+    if (candidates.some(function (s) { return /[ぁ-ん→]/.test(s); })) {
+      return { name: name, candidates: [] };
+    }
+    return { name: '', candidates: candidates };
+  }
+
+  // 「◯◯」「○○」「〇〇」の表記ゆれ、括弧の全角/半角ゆれを許容するプレースホルダー正規表現。
+  // 括弧内の文字列を「ラベル」とする(薬剤名／副作用／治療薬／薬効等)。括弧が無い場合はラベル無し。
+  var PLACEHOLDER_RE = /[◯○〇]{2}(?:[（(]([^）)]*)[）)])?/g;
+  var PLACEHOLDER_OTHER_LABEL = 'その他';
+
+  /**
+   * テキスト中に出現する◯◯プレースホルダーのラベル一覧を、出現順(重複除去)で返す。
+   */
+  function extractPlaceholders(text) {
+    var order = [];
+    var seen = {};
+    var re = new RegExp(PLACEHOLDER_RE.source, 'g');
+    var m;
+    while ((m = re.exec(text))) {
+      var label = (m[1] || '').trim() || PLACEHOLDER_OTHER_LABEL;
+      if (!seen[label]) {
+        seen[label] = true;
+        order.push(label);
+      }
+    }
+    return order;
+  }
+
+  /**
+   * テキストを、プレースホルダー部分とそれ以外に分割したセグメント列にする。
+   * valuesByLabelにそのラベルの入力値(trim後、空でない)があれば type:'filled'、
+   * 無ければ type:'empty'(元の◯◯表記のまま)を返す。
+   * プレビューのハイライト表示・コピー時の置換の両方で共通して使う。
+   */
+  function buildPlaceholderSegments(text, valuesByLabel) {
+    var segments = [];
+    var lastIndex = 0;
+    var re = new RegExp(PLACEHOLDER_RE.source, 'g');
+    var m;
+    while ((m = re.exec(text))) {
+      if (m.index > lastIndex) {
+        segments.push({ type: 'text', value: text.slice(lastIndex, m.index) });
+      }
+      var label = (m[1] || '').trim() || PLACEHOLDER_OTHER_LABEL;
+      var raw = valuesByLabel && Object.prototype.hasOwnProperty.call(valuesByLabel, label)
+        ? valuesByLabel[label]
+        : '';
+      var value = String(raw || '').trim();
+      if (value) {
+        segments.push({ type: 'filled', label: label, value: value });
+      } else {
+        segments.push({ type: 'empty', label: label, raw: m[0] });
+      }
+      lastIndex = m.index + m[0].length;
+    }
+    if (lastIndex < text.length) {
+      segments.push({ type: 'text', value: text.slice(lastIndex) });
+    }
+    return segments;
+  }
+
+  /**
+   * 入力値でプレースホルダーを置換した最終テキストを返す(コピー用)。
+   * 前後の文章は一切変更しない(置換のみ)。未入力のラベルは◯◯表記のまま残す。
+   */
+  function applyPlaceholders(text, valuesByLabel) {
+    return buildPlaceholderSegments(text, valuesByLabel).map(function (seg) {
+      if (seg.type === 'text') return seg.value;
+      if (seg.type === 'filled') return seg.value;
+      return seg.raw;
+    }).join('');
+  }
+
+  /**
+   * 未入力のまま残る◯◯プレースホルダーが1つでもあればtrue。
+   */
+  function hasUnfilledPlaceholder(text, valuesByLabel) {
+    return buildPlaceholderSegments(text, valuesByLabel).some(function (seg) {
+      return seg.type === 'empty';
+    });
   }
 
   // 見出し先頭の絵文字アイコン(🔵等)を取り除くための正規表現(parser.js内でも
@@ -311,6 +436,12 @@
     cleanDrugName: cleanDrugName,
     cleanCategoryName: cleanCategoryName,
     buildDrugIndex: buildDrugIndex,
-    buildCategoryIndex: buildCategoryIndex
+    buildCategoryIndex: buildCategoryIndex,
+    findAncestorByLevel: findAncestorByLevel,
+    parseDrugHeadingTitle: parseDrugHeadingTitle,
+    extractPlaceholders: extractPlaceholders,
+    buildPlaceholderSegments: buildPlaceholderSegments,
+    applyPlaceholders: applyPlaceholders,
+    hasUnfilledPlaceholder: hasUnfilledPlaceholder
   };
 });
