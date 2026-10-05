@@ -1013,6 +1013,9 @@
 
   searchInput.addEventListener('input', function () {
     state.filter = searchInput.value;
+    // インデックスで項目を選択中でも、検索入力したら一覧(振り出し)に戻して検索結果を出す。
+    state.selectedDrugKey = null;
+    state.selectedCategoryKey = null;
     render();
   });
 
