@@ -386,6 +386,10 @@
       clearField(labels[i].textContent, inputs[i]);
     }
   });
+  function splitSlashCandidates(label) {
+    var parts = label.split(/[／\/]/).map(function (s) { return s.trim(); }).filter(Boolean);
+    return parts.length >= 2 ? parts : [];
+  }
   function buildPlaceholderInputsEl(blocks) {
     var values = state.placeholderValues;
     var labels = [];
@@ -411,7 +415,6 @@
     }
     var wrap = document.createElement('div');
     wrap.className = 'placeholder-inputs';
-    var candidateRow = null;
 
     var title = document.createElement('div');
     title.className = 'placeholder-title';
@@ -423,7 +426,8 @@
 
     labels.forEach(function (label) {
       if (values[label] === undefined) values[label] = '';
-      var candidates = candidatesByLabel[label] || [];
+      // 候補: 薬剤名は見出しから、それ以外は ◯◯（造影CT／手術）のように「／」区切りなら選択肢として出す。
+      var candidates = candidatesByLabel[label] || splitSlashCandidates(label);
 
       var field = document.createElement('div');
       field.className = 'placeholder-field ' + phColorClass(label);
@@ -468,33 +472,30 @@
       inputWrap.appendChild(clearBtn);
       field.appendChild(inputWrap);
 
-      if (candidates.length > 0) {
-        candidateRow = { label: label, input: input, candidates: candidates };
-      }
       wrap.appendChild(field);
-    });
 
-    if (candidateRow) {
-      var row = document.createElement('div');
-      row.className = 'placeholder-candidates';
-      var rowLabel = document.createElement('span');
-      rowLabel.className = 'placeholder-candidates-label';
-      rowLabel.textContent = '🏷️ 候補:';
-      row.appendChild(rowLabel);
-      candidateRow.candidates.forEach(function (c) {
-        var chip = document.createElement('button');
-        chip.type = 'button';
-        chip.className = 'placeholder-chip';
-        chip.textContent = c;
-        chip.addEventListener('click', function () {
-          candidateRow.input.value = c;
-          values[candidateRow.label] = c;
-          refreshPreviews();
+      if (candidates.length > 0) {
+        var row = document.createElement('div');
+        row.className = 'placeholder-candidates';
+        var rowLabel = document.createElement('span');
+        rowLabel.className = 'placeholder-candidates-label';
+        rowLabel.textContent = '🏷️ 候補:';
+        row.appendChild(rowLabel);
+        candidates.forEach(function (c) {
+          var chip = document.createElement('button');
+          chip.type = 'button';
+          chip.className = 'placeholder-chip';
+          chip.textContent = c;
+          chip.addEventListener('click', function () {
+            input.value = c;
+            values[label] = c;
+            refreshPreviews();
+          });
+          row.appendChild(chip);
         });
-        row.appendChild(chip);
-      });
-      wrap.appendChild(row);
-    }
+        wrap.appendChild(row);
+      }
+    });
 
     return wrap;
   }

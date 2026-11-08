@@ -1133,7 +1133,7 @@ pre {
 }
 
 .placeholder-field {
-  grid-template-columns: 6rem minmax(0, 1fr);
+  grid-template-columns: minmax(6rem, 42%) minmax(0, 1fr);
   padding: 0.25rem 0.9rem;
   background: var(--color-surface);
   border: 1px solid var(--color-yellow-border);
@@ -1217,4 +1217,15 @@ pre {
 .preview-text {
   border-radius: 14px;
   line-height: 1.7;
+}
+
+/* 長いラベル(例: アセトアミノフェン／内服／坐剤)は折り返して入力欄に重ならないようにする */
+.placeholder-label-wrap {
+  min-width: 0;
+}
+
+.placeholder-label {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
 }
